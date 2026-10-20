@@ -1,0 +1,25 @@
+# ---- Core web / API ----
+Django==4.2.25
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.5.0
+django-filter==23.5
+django-cors-headers==4.3.1
+django-celery-beat==2.5.0
+django-redis==5.4.0
+drf-spectacular==0.27.2
+# ---- Async / realtime ----
+celery==5.3.4
+redis==5.0.1
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.1.2
+# ---- Utils ----
+requests==2.31.0
+PyYAML==6.0.1
+python-dotenv==1.0.1
+prometheus-client==0.23.1
+Pillow==10.4.0
+croniter==2.0.5
+# ---- Test ----
+pytest==8.3.3
+pytest-django==4.9.0
