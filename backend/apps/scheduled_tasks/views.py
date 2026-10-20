@@ -17,6 +17,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from drf_spectacular.utils import (
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
+
+
 from apps.common.api.api_exception_handler import BusinessError
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.permissions import ProjectRolePermission, require_project_role
@@ -156,6 +163,7 @@ class CronViewSet(viewsets.ViewSet):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     @action(detail=False, methods=["get"])
     def preview(self, request):
         """Return ``{valid, description, next_runs}`` for ``?expr=``.

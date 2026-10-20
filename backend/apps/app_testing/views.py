@@ -27,6 +27,13 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from drf_spectacular.utils import (
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
+
+
 from apps.app_testing import serializers
 from apps.app_testing.models import (
     TERMINAL_RUN_STATUSES,
@@ -394,6 +401,11 @@ class AppTestRunViewSet(viewsets.ReadOnlyModelViewSet):
 # ---------------------------------------------------------------------------
 # Sonic proxy: devices / element-pages
 # ---------------------------------------------------------------------------
+@extend_schema_view(
+    list=extend_schema(responses=OpenApiTypes.OBJECT),
+    retrieve=extend_schema(responses=OpenApiTypes.OBJECT),
+    remote=extend_schema(request=None, responses=OpenApiTypes.OBJECT),
+)
 class SonicDeviceViewSet(viewsets.ViewSet):
     """Sonic 在线设备代理（未配置 Sonic → 空数组，见模块 docstring）。"""
 
@@ -467,6 +479,7 @@ class SonicDeviceViewSet(viewsets.ViewSet):
         return Response({"configured": True, **info})
 
 
+@extend_schema_view(list=extend_schema(responses=OpenApiTypes.OBJECT))
 class SonicElementPageViewSet(viewsets.ViewSet):
     """Sonic ElementPages 代理（未配置 Sonic → 空数组）。"""
 

@@ -450,7 +450,7 @@ export function normalizeRemoteInfo(payload = {}) {
   const wsUrl = payload.ws_url || payload.wsUrl || ''
   const jmuxer = payload.jmuxer && typeof payload.jmuxer === 'object' ? payload.jmuxer : {}
   return {
-    configured: payload.configured !== false,
+    configured: payload.configured !== false && payload.detail !== SONIC_NOT_CONFIGURED,
     wsUrl: String(wsUrl || ''),
     jmuxer,
     detail: payload.detail || '',

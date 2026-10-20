@@ -210,7 +210,9 @@ SPECTACULAR_SETTINGS = {
 # cache / channel layer (Redis in prod, in-memory otherwise)
 # ---------------------------------------------------------------------------
 REDIS_URL = env("REDIS_URL", "redis://127.0.0.1:6379/0")
-USE_REDIS = env_bool("USE_REDIS", not AITS_TESTING)
+# Redis is only required in production; dev/test default to in-memory so the
+# platform boots without any external service. Set USE_REDIS=1 to force it.
+USE_REDIS = env_bool("USE_REDIS", AITS_ENV == "prod")
 
 if USE_REDIS:
     CACHES = {
@@ -249,7 +251,11 @@ else:
 # ---------------------------------------------------------------------------
 CELERY_BROKER_URL = env("CELERY_BROKER_URL", REDIS_URL if USE_REDIS else "memory://")
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", REDIS_URL if USE_REDIS else "cache+memory://")
-CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_TASK_ALWAYS_EAGER", AITS_TESTING)
+# Without a real broker (no Redis in dev/test) tasks run inline so that
+# executions complete synchronously. Production uses the Redis broker + worker.
+CELERY_TASK_ALWAYS_EAGER = env_bool(
+    "CELERY_TASK_ALWAYS_EAGER", AITS_TESTING or not USE_REDIS
+)
 CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"

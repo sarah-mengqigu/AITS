@@ -24,6 +24,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.utils import (
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
+
+
 from apps.common.api.api_exception_handler import BusinessError
 from apps.common.pagination import StandardResultsSetPagination
 from apps.common.permissions import ProjectRolePermission, require_project_role
@@ -285,6 +292,7 @@ class AiDiagnosisRecordViewSet(BasePerformanceViewSet):
 # ---------------------------------------------------------------------------
 # dashboard
 # ---------------------------------------------------------------------------
+@extend_schema(responses=OpenApiTypes.OBJECT)
 class PerformanceDashboardView(APIView):
     """Aggregated metrics for the performance monitoring dashboard."""
 
@@ -450,11 +458,13 @@ class GrafanaWebhookView(APIView):
                 message="Grafana Webhook token 校验失败", code="invalid_token", status_code=403
             )
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         self._check_token(request)
         result = diagnosis_service.handle_grafana_webhook(request.data)
         return Response(result, status=status.HTTP_200_OK)
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         # Convenience probe for Grafana configuration pages / smoke scripts.
         return Response({"status": "ok", "endpoint": "grafana-webhook"})

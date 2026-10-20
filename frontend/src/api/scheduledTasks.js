@@ -36,9 +36,9 @@ export const scheduledTasksApi = {
     return client.get(`${BASE}/logs/${id}/`).then((response) => response.data)
   },
 
-  cronPreview(expr) {
+  cronPreview(expr, params = {}) {
     return client
-      .get(`${BASE}/cron/preview/`, { params: { expr } })
+      .get(`${BASE}/cron/preview/`, { params: { count: 5, ...params, expr } })
       .then((response) => response.data)
   },
 }

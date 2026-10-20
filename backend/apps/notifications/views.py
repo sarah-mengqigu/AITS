@@ -15,6 +15,13 @@ from rest_framework.permissions import SAFE_METHODS, IsAdminUser, IsAuthenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.utils import (
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
+
+
 from apps.common.api.api_exception_handler import BusinessError
 from apps.common.permissions import require_project_role
 from apps.notifications.models import (
@@ -113,13 +120,16 @@ class EmailConfigView(APIView):
             return [IsAuthenticated()]
         return [IsAuthenticated(), IsAdminUser()]
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         config = EmailConfig.get_solo() or EmailConfig()
         return Response(EmailConfigSerializer(config).data)
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def put(self, request):
         return self._write(request, partial=False)
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def patch(self, request):
         return self._write(request, partial=True)
 
@@ -140,6 +150,7 @@ class NotificationTestView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         receiver = self._resolve_receiver(request)
         channel_code = request.data.get("channel_code") or ""

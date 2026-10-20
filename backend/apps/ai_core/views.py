@@ -22,6 +22,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from drf_spectacular.utils import (
+    OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
+)
+
+
 from apps.ai_core.models import (
     LLMConfiguration,
     LLMUsageLog,
@@ -242,6 +249,7 @@ class UsageStatsView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         queryset = LLMUsageLog.objects.all()
         user = request.user
@@ -357,6 +365,7 @@ class UsageStatsView(APIView):
 class RagIndexView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         document_id = request.data.get("document_id")
         if document_id in (None, "", []):
@@ -384,6 +393,7 @@ class RagIndexView(APIView):
 class RagSearchView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT)
     def post(self, request):
         query = request.data.get("query") or request.query_params.get("query")
         if not query or not str(query).strip():
@@ -413,6 +423,7 @@ class RagSearchView(APIView):
 class RagStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         return Response(RAGService().stats())
 
@@ -420,6 +431,10 @@ class RagStatsView(APIView):
 # ---------------------------------------------------------------------------
 # agents
 # ---------------------------------------------------------------------------
+@extend_schema_view(
+    list=extend_schema(responses=OpenApiTypes.OBJECT),
+    run=extend_schema(request=OpenApiTypes.OBJECT, responses=OpenApiTypes.OBJECT),
+)
 class AgentViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
