@@ -1,0 +1,56 @@
+groups:
+  - name: aits-platform-alerts
+    rules:
+      - alert: AITSHighErrorRate
+        expr: |
+          sum(rate(aits_test_cases_total{status="failed"}[5m]))
+            / clamp_min(sum(rate(aits_test_cases_total[5m])), 0.001) > 0.3
+        for: 3m
+        labels:
+          severity: warning
+          source: aits
+        annotations:
+          summary: "AITS 用例失败率超过 30%"
+          description: "最近 5 分钟失败率 {{ $value | humanizePercentage }}，请检查执行记录。"
+
+      - alert: AITSAgentErrors
+        expr: sum(rate(aits_ai_requests_total{status="error"}[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+          source: aits
+        annotations:
+          summary: "AI Agent 调用错误率升高"
+          description: "最近 5 分钟 Agent 错误请求速率 {{ $value }}，请检查模型配置与配额。"
+
+      - alert: AITSP95LatencyHigh
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(aits_execution_duration_seconds_bucket[5m])) by (le, domain)) > 300
+        for: 5m
+        labels:
+          severity: critical
+          source: aits
+        annotations:
+          summary: "{{ $labels.domain }} 执行 P95 超过 5 分钟"
+          description: "执行耗时异常，可能存在环境或被测服务问题。"
+
+      - alert: AITSBackendDown
+        expr: up{job="aits-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          source: aits
+        annotations:
+          summary: "AITS 后端不可达"
+          description: "Prometheus 无法抓取 AITS /metrics，请检查服务状态。"
+
+      - alert: AITSHighCPU
+        expr: 100 - (avg by(instance) (rate(windows_cpu_time_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          source: windows-exporter
+        annotations:
+          summary: "压测机 CPU 使用率过高"
+          description: "实例 {{ $labels.instance }} CPU 使用率 {{ $value | humanize }}%，可能影响压测结果。"

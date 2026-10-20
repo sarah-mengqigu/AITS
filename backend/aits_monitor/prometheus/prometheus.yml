@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: aits-v2
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+  # AITS backend exposes business + agent metrics on /metrics
+  - job_name: aits-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8000"]
+        labels:
+          instance: aits-backend
+          role: platform
+
+  # Locust exposes a Prometheus exporter while a performance run is active
+  - job_name: locust-performance
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8089"]
+        labels:
+          instance: aits-locust
+          role: load-generator
+
+  # Pressure machines are registered automatically by
+  # backend/utils/prometheus_sd.py -> targets.json (File SD)
+  - job_name: windows-exporter
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/targets.json
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance

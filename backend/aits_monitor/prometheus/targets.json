@@ -1,0 +1,11 @@
+[
+  {
+    "targets": [
+      "172.20.10.8:9182"
+    ],
+    "labels": {
+      "instance": "AITS-Generator",
+      "role": "load-generator"
+    }
+  }
+]
