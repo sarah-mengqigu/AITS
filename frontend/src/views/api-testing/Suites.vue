@@ -42,7 +42,7 @@
       >
         <el-table-column label="套件名称" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="openEdit(row)">
+            <el-link type="primary" underline="never" @click="openEdit(row)">
               {{ row.name }}
             </el-link>
             <div v-if="row.description" class="suite-desc">{{ row.description }}</div>
@@ -147,8 +147,8 @@
                 :button-texts="['移除', '添加']"
               />
               <p class="text-small text-muted">
-                已加载 {{ caseOptions.length }} / {{ caseTotal }} 条用例（单次最多 200 条）；
-                可通过「用例管理」筛选后再回来选择。
+                已加载 {{ caseOptions.length }} / {{ caseTotal }} 条用例（最多加载 1000 条）；
+                可按名称搜索后选择。
               </p>
             </div>
           </el-form-item>
@@ -357,13 +357,26 @@ async function loadEnvOptions() {
 async function loadCaseOptions() {
   if (!props.projectId) return
   caseLoading.value = true
+  const collected = []
+  let total = 0
   try {
-    const data = await apiTestingApi.listCases({ project: props.projectId, page_size: 200 })
-    caseOptions.value = Array.isArray(data?.results) ? data.results : []
-    caseTotal.value = Number(data?.count ?? caseOptions.value.length)
+    // 后端单页上限 200；套件用例选择需要完整列表，最多翻 5 页（1000 条）
+    for (let page = 1; page <= 5; page += 1) {
+      const data = await apiTestingApi.listCases({
+        project: props.projectId,
+        page,
+        page_size: 200,
+      })
+      const results = Array.isArray(data?.results) ? data.results : []
+      total = Number(data?.count ?? results.length)
+      collected.push(...results)
+      if (results.length < 200 || collected.length >= total) break
+    }
+    caseOptions.value = collected
+    caseTotal.value = total
   } catch (error) {
-    caseOptions.value = []
-    caseTotal.value = 0
+    caseOptions.value = collected
+    caseTotal.value = total || collected.length
     ElMessage.error(error?.message || '用例列表加载失败')
   } finally {
     caseLoading.value = false
@@ -468,8 +481,8 @@ async function handleDelete(row) {
 function openRun(row) {
   runTarget.value = row
   const defaultEnv =
-    envOptions.value.find((env) => env.is_default)?.id ||
     row.environment ||
+    envOptions.value.find((env) => env.is_default)?.id ||
     null
   runEnvironment.value = defaultEnv
   runDialogVisible.value = true

@@ -259,8 +259,8 @@
       <el-form label-width="110px" class="drawer-form">
         <el-form-item label="配置范围" required>
           <el-radio-group v-model="form.scope">
-            <el-radio label="global">全局配置</el-radio>
-            <el-radio label="project" :disabled="!projectStore.currentProjectId">当前项目</el-radio>
+            <el-radio value="global">全局配置</el-radio>
+            <el-radio value="project" :disabled="!projectStore.currentProjectId">当前项目</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="配置名称" required>
@@ -274,8 +274,8 @@
         </el-form-item>
         <el-form-item label="嵌入模式">
           <el-radio-group v-model="form.embedding_mode">
-            <el-radio label="local">本地哈希嵌入</el-radio>
-            <el-radio label="remote">远程嵌入服务</el-radio>
+            <el-radio value="local">本地哈希嵌入</el-radio>
+            <el-radio value="remote">远程嵌入服务</el-radio>
           </el-radio-group>
           <div class="field-hint">本地模式无需额外依赖，远程模式需配置嵌入模型与地址。</div>
         </el-form-item>

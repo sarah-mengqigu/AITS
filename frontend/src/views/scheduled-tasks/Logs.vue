@@ -233,9 +233,10 @@ const loading = ref(false)
 const pageError = ref('')
 
 const tasks = ref([])
+const initialTaskId = Number(route.query.task)
 const filters = reactive({
   status: '',
-  task: route.query.task ? Number(route.query.task) : '',
+  task: Number.isFinite(initialTaskId) && initialTaskId > 0 ? initialTaskId : '',
   project: projectStore.currentProjectId || '',
   suite_type: '',
 })

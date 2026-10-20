@@ -66,7 +66,7 @@
       >
         <el-table-column label="用例名称" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="openEdit(row)">{{ row.name }}</el-link>
+            <el-link type="primary" underline="never" @click="openEdit(row)">{{ row.name }}</el-link>
             <div v-if="row.description" class="row-desc">{{ row.description }}</div>
           </template>
         </el-table-column>

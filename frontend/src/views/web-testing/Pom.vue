@@ -332,11 +332,12 @@ async function loadElements() {
   try {
     let data
     try {
-      // 优先后端列表过滤（?page=<页面 id>）
-      data = await webTestingApi.listElements({ page: selectedPage.value.id, page_size: 200 })
-    } catch (error) {
-      // 分页参数与 page 过滤同名时可能 404，降级到 pages/{id}/elements/
+      // 优先 `pages/{id}/elements/`：列表过滤的 `?page=` 与分页参数同名，
+      // 页面 id 大于总页数时会被分页器判为非法页（404）。
       data = await webTestingApi.pageElements(selectedPage.value.id)
+    } catch (error) {
+      // 兜底：列表过滤（后端同样支持 ?page=<页面 id>）
+      data = await webTestingApi.listElements({ page: selectedPage.value.id, page_size: 200 })
     }
     elements.value = normalizeElementList(data)
   } catch (error) {

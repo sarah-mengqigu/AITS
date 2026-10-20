@@ -67,9 +67,9 @@
         empty-text="暂无执行记录"
         @change="loadExecutions"
       >
-        <el-table-column label="执行名称" min-width="230" show-overflow-tooltip>
+        <el-table-column label="执行名称" min-width="210" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="openDetailById(row.id)">
+            <el-link type="primary" underline="never" @click="openDetailById(row.id)">
               {{ row.name || '未命名执行' }}
             </el-link>
           </template>
@@ -116,10 +116,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="触发人" width="100" show-overflow-tooltip>
-          <template #default="{ row }">{{ row.triggered_by_name || '—' }}</template>
-        </el-table-column>
-        <el-table-column label="开始时间" width="160">
+        <el-table-column label="开始时间" width="150" show-overflow-tooltip>
           <template #default="{ row }">{{ formatDateTime(row.started_at || row.created_at) }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" fixed="right">
@@ -199,17 +196,26 @@
             <el-descriptions-item label="执行环境">{{ detail.environment_name || '项目默认环境' }}</el-descriptions-item>
             <el-descriptions-item label="开始时间">{{ formatDateTime(detail.started_at) }}</el-descriptions-item>
             <el-descriptions-item label="结束时间">{{ formatDateTime(detail.finished_at) }}</el-descriptions-item>
-            <el-descriptions-item label="报告路径">
+            <el-descriptions-item label="报告路径（服务器）">
               <span class="mono">{{ detail.report_path || '—' }}</span>
               <el-link
                 v-if="reportPathUrl"
                 class="ml-8"
                 type="primary"
-                :underline="false"
+                underline="never"
                 :href="reportPathUrl"
                 target="_blank"
               >
                 打开
+              </el-link>
+              <el-link
+                v-if="detail.report_path"
+                class="ml-8"
+                type="primary"
+                underline="never"
+                @click="copyReportPath"
+              >
+                复制路径
               </el-link>
             </el-descriptions-item>
             <el-descriptions-item v-if="detail.error_message" label="错误信息" :span="2">
@@ -383,6 +389,7 @@ const props = defineProps({
   projectId: { type: [Number, String], default: null },
   refreshKey: { type: Number, default: 0 },
   initialExecutionId: { type: [Number, String], default: null },
+  active: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['initial-consumed', 'changed', 'switch-tab'])
@@ -598,6 +605,26 @@ function downloadReport() {
   downloadJson(report.value, buildReportFilename(detail.value || { id: currentDetailId }))
 }
 
+async function copyReportPath() {
+  const path = detail.value?.report_path
+  if (!path) return
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(path)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = path
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+    ElMessage.success('报告路径已复制')
+  } catch (error) {
+    ElMessage.error(`复制失败：${error?.message || '浏览器不支持'}`)
+  }
+}
+
 watch(
   () => props.projectId,
   () => {
@@ -611,6 +638,22 @@ watch(
 watch(
   () => props.refreshKey,
   () => loadExecutions(),
+)
+
+watch(
+  () => props.active,
+  (active) => {
+    if (!active) {
+      if (listTimer) {
+        clearInterval(listTimer)
+        listTimer = null
+      }
+      detailVisible.value = false
+      watcher.stop()
+      return
+    }
+    scheduleListRefresh()
+  },
 )
 
 watch(

@@ -281,6 +281,21 @@ class DashboardApiTests(PerformanceFixture):
         self.assertEqual(response.data["trend"][-1]["executions"], 1)
         self.assertEqual(len(response.data["recent_executions"]), 1)
         self.assertEqual(response.data["recent_executions"][0]["id"], execution_id)
+        # regression: trend buckets must report passed/failed separately
+        trend_today = response.data["trend"][-1]
+        self.assertEqual(
+            trend_today["passed"],
+            summary["passed"],
+        )
+        self.assertEqual(trend_today["failed"], summary["failed"])
+        self.assertEqual(
+            trend_today["passed"] + trend_today["failed"] + summary.get("error", 0),
+            trend_today["executions"],
+        )
+        # regression: summary must aggregate request volume, not stay at 0
+        execution = PerformanceExecution.objects.get(pk=execution_id)
+        self.assertGreater(execution.total_requests, 0)
+        self.assertEqual(summary["total_requests"], execution.total_requests)
         self.assertEqual(response.data["diagnosis"]["total"], 1)
         self.assertEqual(response.data["diagnosis"]["pending"], 1)
 

@@ -95,8 +95,8 @@
       <el-form label-width="100px">
         <el-form-item label="归属范围" required>
           <el-radio-group v-model="form.scope">
-            <el-radio label="project" :disabled="!projectStore.currentProjectId">当前项目</el-radio>
-            <el-radio label="global" :disabled="!isStaff">全局（仅管理员）</el-radio>
+            <el-radio value="project" :disabled="!projectStore.currentProjectId">当前项目</el-radio>
+            <el-radio value="global" :disabled="!isStaff">全局（仅管理员）</el-radio>
           </el-radio-group>
           <div class="field-hint">
             {{ form.scope === 'project'

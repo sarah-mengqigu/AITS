@@ -153,8 +153,8 @@
       <el-form label-width="110px" class="drawer-form">
         <el-form-item label="配置范围" required>
           <el-radio-group v-model="form.scope">
-            <el-radio label="global">全局配置</el-radio>
-            <el-radio label="project" :disabled="!projectStore.currentProjectId">当前项目</el-radio>
+            <el-radio value="global">全局配置</el-radio>
+            <el-radio value="project" :disabled="!projectStore.currentProjectId">当前项目</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="配置名称" required>

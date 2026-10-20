@@ -80,9 +80,10 @@
         <div class="login-tips">
           <el-icon><InfoFilled /></el-icon>
           <span>
-            演示环境：<code>admin / admin123</code>。若账号尚未初始化，请在
+            演示环境：<code>admin / Admin@12345</code>。首次使用请在
             <code>backend/</code> 下执行
-            <code>.venv/bin/python manage.py createsuperuser</code> 创建管理员。
+            <code>.venv/bin/python manage.py seed_demo</code> 初始化演示数据，
+            或执行 <code>createsuperuser</code> 创建管理员。
           </span>
         </div>
 

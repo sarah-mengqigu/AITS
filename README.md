@@ -88,11 +88,54 @@ export SONIC_BASE_URL=http://127.0.0.1:3000 SONIC_USERNAME=... SONIC_PASSWORD=..
 后端启动后：`/api/docs/`（Swagger UI）、`/api/schema/`（OpenAPI）、`/api/redoc/`。
 健康检查：`/health/`；指标：`/metrics/`。
 
-## 测试
+## 首次运行（推荐）
 
 ```bash
-cd backend && AITS_ENV=test .venv/bin/python manage.py test apps -v 1
-cd frontend && pnpm test -- --run
+cd backend
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py seed_demo     # 幂等：创建演示账号与四大测试域数据
+# 登录：admin / Admin@12345
 ```
 
-每个模块的自验证证据见 `docs/VERIFICATION.md`。
+`seed_demo` 通过**公开 HTTP API** 创建数据，等价于一次端到端冒烟：
+
+```
+演示商城 · 接口测试   4 端点 / 16 用例 / 套件执行 passed
+演示商城 · Web 测试   登录→搜索→下单 执行 passed
+演示商城 · App 测试   启动→登录→下单 执行 passed
+演示商城 · 性能压测   50 并发场景 执行 passed
+定时任务              工作日 9 点接口回归（最近一次 passed）
+```
+
+## 界面预览
+
+| 仪表盘 | API 模块与端点 |
+|---|---|
+| ![仪表盘](docs/screenshots/01-dashboard.png) | ![API 模块与端点](docs/screenshots/02-api-endpoints.png) |
+
+| 执行记录与报告 | 监控大盘 |
+|---|---|
+| ![执行记录](docs/screenshots/03-api-executions.png) | ![监控大盘](docs/screenshots/06-monitoring.png) |
+
+| AI 模型配置 | 定时任务 |
+|---|---|
+| ![AI 模型](docs/screenshots/07-ai-models.png) | ![定时任务](docs/screenshots/08-scheduled-tasks.png) |
+
+更多截图见 `docs/screenshots/`。
+
+## 测试与验证
+
+```bash
+./scripts/verify.sh            # 后端 418 项测试 + 前端单测/构建 + 在线冒烟
+cd backend && AITS_ENV=test .venv/bin/python manage.py test apps tests -v 1
+cd frontend && pnpm test -- --run && pnpm build
+```
+
+- 测试矩阵与证据：[`docs/VERIFICATION.md`](docs/VERIFICATION.md)
+- 模块契约与目录约定：[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- API 参考（269 个操作）：[`docs/API.md`](docs/API.md) / [`docs/openapi.yaml`](docs/openapi.yaml)
+- 开发排期与并行策略：[`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md)
+
+> 无 Redis / Docker / Sonic / LLM Key 也能完整运行与自测：dev/test 自动使用内存缓存、
+> 内存 Channel Layer 与 eager Celery，执行引擎默认 `simulated`（确定性结果）。
+> 生产通过 `USE_REDIS=1`、`AITS_EXECUTION_MODE=real` 与数据库中的 LLM 配置切换真实能力。

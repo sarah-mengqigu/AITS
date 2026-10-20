@@ -13,16 +13,39 @@ django_asgi_app = get_asgi_application()
 from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
 from django.urls import path  # noqa: E402
 
-from apps.common.websocket.consumers import TaskStatusConsumer  # noqa: E402
+from apps.common.websocket.consumers import (  # noqa: E402
+    MidsceneScriptStreamConsumer,
+    ScenarioGenerationStreamConsumer,
+    TaskStatusConsumer,
+    WebUIAutoTestStreamConsumer,
+    WebUITestGenerationStreamConsumer,
+)
 from apps.common.websocket.core import (  # noqa: E402
     WebSocketJWTAuthMiddlewareStack,
     websocket_urlpatterns,
 )
 
-# Each module may register additional websocket routes in its own
-# ``routing.py``; they are collected into ``websocket_urlpatterns`` during app
-# startup (see apps/common/websocket/core.py).
-extra_patterns = [
+# Streaming channels declared in the design document (v2 §3.3).
+stream_urlpatterns = [
+    path(
+        "ws/scenario_generation-streaming/",
+        ScenarioGenerationStreamConsumer.as_asgi(),
+    ),
+    path(
+        "ws/midscene_script_generation-streaming/",
+        MidsceneScriptStreamConsumer.as_asgi(),
+    ),
+    path(
+        "ws/webui_test_generation-streaming/",
+        WebUITestGenerationStreamConsumer.as_asgi(),
+    ),
+    path(
+        "ws/webui_auto_test-streaming/",
+        WebUIAutoTestStreamConsumer.as_asgi(),
+    ),
+]
+
+task_urlpatterns = [
     path("ws/task-status/<str:task_id>/", TaskStatusConsumer.as_asgi()),
 ]
 
@@ -30,7 +53,7 @@ application = ProtocolTypeRouter(
     {
         "http": django_asgi_app,
         "websocket": WebSocketJWTAuthMiddlewareStack(
-            URLRouter(list(websocket_urlpatterns) + extra_patterns)
+            URLRouter(list(websocket_urlpatterns) + stream_urlpatterns + task_urlpatterns)
         ),
     }
 )

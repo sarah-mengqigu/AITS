@@ -35,11 +35,9 @@ else
   printf '\033[1;33m↷ frontend skipped\033[0m\n'
 fi
 
-if [[ -f "$ROOT/scripts/smoke_api.py" ]]; then
-  step "End-to-end API smoke"
-  ( cd "$BACKEND" && AITS_ENV=test "$PY" "$ROOT/scripts/smoke_api.py" ) \
-    && ok "api smoke" || fail "api smoke"
-fi
+step "Live API smoke (skipped when no server is running)"
+( cd "$ROOT" && "$PY" "$ROOT/scripts/smoke_live.py" ) \
+  && ok "live smoke" || fail "live smoke"
 
 printf '\n'
 if [[ $FAILED -eq 0 ]]; then

@@ -68,8 +68,16 @@ from apps.common.websocket.core import WebSocketMessageService
 WebSocketMessageService.push_task_status(task_id, status="running", progress=30, message="执行中")
 WebSocketMessageService.push_stream("scenario_generation", task_id, {"type": "stream_chunk", "chunk": "..."})
 ```
-已存在的流通道：`scenario_generation` / `midscene_script_generation` / `webui_test_generation` / `webui_auto_test`。
-`task_id` 使用任务主键字符串；前端订阅 `ws/task-status/<task_id>/?token=<access>` 与 `ws/<channel>-streaming/?token=<access>`。
+已注册的 WebSocket 路由（`aits_backend/asgi.py`，均有测试覆盖）：
+- `ws/task-status/<task_id>/?token=<access>` —— 任务状态帧 `{"type":"task_status",...}`
+- `ws/scenario_generation-streaming/?token=<access>[&task_id=<id>]`
+- `ws/midscene_script_generation-streaming/?token=<access>[&task_id=<id>]`
+- `ws/webui_test_generation-streaming/?token=<access>[&task_id=<id>]`
+- `ws/webui_auto_test-streaming/?token=<access>[&task_id=<id>]`
+
+流通道带 `task_id` 时只接收该任务的帧；省略则接收该通道全部帧（帧内自带 `task_id`）。
+业务侧统一用 `WebSocketMessageService.push_stream(channel, task_id, payload)`，
+它会同时投递到任务级组与通道级组。
 
 ### 1.7 异步任务
 ```python
@@ -175,7 +183,7 @@ submit(run_suite, execution.id)   # 测试环境自动 eager 执行
 - `GET/POST /api/web-testing/cases/`，`POST .../{id}/generate_script/`（AI→Playwright；降级模板），`POST .../{id}/run/`
 - `GET/POST /api/web-testing/suites/`，`POST .../{id}/run/`
 - `GET /api/web-testing/executions/`，`GET .../{id}/`，`POST .../{id}/cancel/`，`GET .../{id}/report/`
-- `GET/POST /api/web-testing/pages/`、`/api/web-testing/elements/`（`?page=`）
+- `GET/POST /api/web-testing/pages/`、`/api/web-testing/elements/`（按页面过滤用 `?page_id=`；`?page=` 保留给分页器，避免参数冲突）
 - `GET/POST /api/web-testing/midscene-scripts/`，`POST .../{id}/generate/`
 - 服务：`services/runner.py`（`PlaywrightRunner` real / `SimulatedRunner` simulated，产出 Allure 兼容 `*-result.json` 到 `settings.ALLURE_RESULTS_ROOT`）、`services/execution.py::execute_suite(...)`、`services/generator.py`
 

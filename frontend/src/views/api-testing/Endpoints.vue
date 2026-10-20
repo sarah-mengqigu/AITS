@@ -114,16 +114,13 @@
               <span class="mono">{{ row.path }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="摘要" min-width="200" show-overflow-tooltip>
+          <el-table-column label="摘要" min-width="240" show-overflow-tooltip>
             <template #default="{ row }">
               {{ row.summary || row.operation_id || '—' }}
             </template>
           </el-table-column>
           <el-table-column label="模块" width="140" show-overflow-tooltip>
             <template #default="{ row }">{{ row.module_name || '—' }}</template>
-          </el-table-column>
-          <el-table-column label="规范" width="150" show-overflow-tooltip>
-            <template #default="{ row }">{{ row.spec_name || '—' }}</template>
           </el-table-column>
           <el-table-column label="用例" width="70" align="center">
             <template #default="{ row }">{{ row.case_count ?? 0 }}</template>

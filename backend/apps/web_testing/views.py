@@ -411,9 +411,18 @@ class WebElementViewSet(WebTestingViewSet):
     queryset = WebElement.objects.select_related("page", "page__project")
     serializer_class = serializers.WebElementSerializer
     project_field = "page__project"
-    filterset_fields = ("page", "locator_type")
+    # NOTE: ``page`` is reserved by DRF pagination, so the POM page filter is
+    # exposed as ``?page_id=<WebPage id>`` (``?page=`` still paginates).
+    filterset_fields = ("locator_type",)
     search_fields = ("name", "locator_value", "description")
     ordering_fields = ("created_at", "name")
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        page_id = self.request.query_params.get("page_id")
+        if page_id not in (None, ""):
+            queryset = queryset.filter(page_id=page_id)
+        return queryset
 
     @action(detail=False, methods=["post"])
     def bulk(self, request):

@@ -6,8 +6,15 @@
       type="warning"
       show-icon
       :closable="false"
-      description="部分数据加载失败，可稍后点击「刷新总览」重试；已加载的数据仍可正常使用。"
+      description="部分数据加载失败，可点击右上角「刷新总览」重试；已加载的数据仍可正常使用。"
     />
+
+    <div class="overview-actions">
+      <span class="text-small text-muted">统计范围：当前项目的规范、端点、用例、套件与执行记录</span>
+      <el-button size="small" :icon="Refresh" :loading="statsLoading" @click="loadAll">
+        刷新总览
+      </el-button>
+    </div>
 
     <section class="overview-stats">
       <StatCard label="接口规范" :value="stats.specs" :loading="statsLoading" :icon="Document" icon-color="#2563eb" icon-bg="#e9effd" hint="OpenAPI / Swagger / Postman" />
@@ -305,6 +312,14 @@ onMounted(loadAll)
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.overview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .overview-stats {

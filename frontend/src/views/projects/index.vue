@@ -60,7 +60,7 @@
       >
         <el-table-column label="项目名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="goDetail(row)">
+            <el-link type="primary" underline="never" @click="goDetail(row)">
               {{ row.name }}
             </el-link>
             <span v-if="row.description" class="project-desc">{{ row.description }}</span>

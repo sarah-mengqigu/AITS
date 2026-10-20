@@ -192,7 +192,9 @@ class WebSocketMessageService:
 
     @classmethod
     def push_stream(cls, stream_channel, task_id, payload):
+        """Fan out a stream frame to the task-scoped and channel-wide groups."""
         cls.push_to_group(cls.group_for_stream(stream_channel, task_id), payload)
+        cls.push_to_group(f"stream_{stream_channel}", payload)
 
 
 class WebSocketConsumerFactory:

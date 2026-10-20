@@ -410,9 +410,29 @@ class PomAPITests(WebTestingBaseTestCase):
         self.assertEqual(len(elements.data), 1)
         self.assertEqual(elements.data[0]["name"], "用户名输入框")
 
-        listing = self.viewer_client.get(f"{API}/elements/", {"page": page_id})
+        listing = self.viewer_client.get(f"{API}/elements/", {"page_id": page_id})
         self.assertEqual(listing.status_code, 200)
         self.assertEqual(listing.data["count"], 1)
+
+        # ``page`` stays reserved for pagination: a page_id larger than the
+        # number of result pages must still filter correctly (regression guard).
+        second = self.editor_client.post(
+            f"{API}/pages/",
+            {"project": self.project.id, "name": "首页", "url": "https://example.com/"},
+            format="json",
+        )
+        self.assertEqual(second.status_code, 201, second.data)
+        big_page_id = second.data["id"]
+        self.editor_client.post(
+            f"{API}/elements/",
+            {"page": big_page_id, "name": "搜索框", "locator_type": "css",
+             "locator_value": "#search"},
+            format="json",
+        )
+        filtered = self.viewer_client.get(f"{API}/elements/", {"page_id": big_page_id})
+        self.assertEqual(filtered.status_code, 200, filtered.data)
+        self.assertEqual(filtered.data["count"], 1)
+        self.assertEqual(filtered.data["results"][0]["name"], "搜索框")
 
     def test_invalid_locator_type_is_rejected(self):
         page = self.create_page()

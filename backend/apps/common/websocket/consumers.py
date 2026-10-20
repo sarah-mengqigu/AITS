@@ -31,9 +31,26 @@ class TaskStatusConsumer(TaskStatusMixin, BaseWebSocketConsumer):
 
 
 class StreamConsumer(StreamingConsumerMixin, TaskStatusMixin, BaseWebSocketConsumer):
-    """Base class for ``ws/<name>-streaming/`` agent output channels."""
+    """Base class for ``ws/<name>-streaming/`` agent output channels.
+
+    Clients may scope the subscription with ``?task_id=<id>`` (only events of
+    that task are delivered) or omit it to receive every event of the channel.
+    """
 
     stream_channel = "generic"
+
+    async def connect(self):
+        from urllib.parse import parse_qs
+
+        query = parse_qs((self.scope.get("query_string") or b"").decode("latin-1"))
+        task_id = (query.get("task_id") or [""])[0]
+        self.stream_task_id = task_id
+        self.group_name = (
+            f"stream_{self.stream_channel}_{task_id}"
+            if task_id
+            else f"stream_{self.stream_channel}"
+        )
+        await super().connect()
 
     async def handle_message(self, content):
         if isinstance(content, dict) and content.get("action") == "cancel":

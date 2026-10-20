@@ -57,7 +57,7 @@
       >
         <el-table-column label="规范名称" min-width="220" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="openDetail(row)">
+            <el-link type="primary" underline="never" @click="openDetail(row)">
               {{ row.name }}
             </el-link>
             <div v-if="row.base_url" class="mono text-muted">{{ row.base_url }}</div>

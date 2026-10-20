@@ -196,7 +196,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { BarChart, LineChart, PieChart } from 'echarts/charts'
@@ -361,11 +361,6 @@ function openDetail(row) {
   detail.value = row
   detailVisible.value = true
 }
-
-watch(
-  () => filters.scope,
-  () => loadAll(),
-)
 
 onMounted(async () => {
   if (!projectStore.loaded) {

@@ -204,7 +204,7 @@
         </el-form-item>
         <el-form-item label="通知条件">
           <el-radio-group v-model="form.trigger_condition">
-            <el-radio v-for="item in TRIGGER_CONDITION_OPTIONS" :key="item.value" :label="item.value">
+            <el-radio v-for="item in TRIGGER_CONDITION_OPTIONS" :key="item.value" :value="item.value">
               {{ item.label }}
             </el-radio>
           </el-radio-group>

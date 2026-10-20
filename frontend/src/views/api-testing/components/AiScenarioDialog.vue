@@ -89,7 +89,7 @@
 </template>
 
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import JsonViewer from '@/components/JsonViewer.vue'
@@ -131,6 +131,15 @@ const scenarioStepCount = computed(() => {
 function handleVisibleChange(value) {
   emit('update:modelValue', value)
 }
+
+watch(
+  () => props.projectId,
+  () => {
+    // 切换项目后旧的生成结果不再属于当前项目，避免误解
+    result.value = null
+    errorMessage.value = ''
+  },
+)
 
 function handleClosed() {
   // 保留上次结果，便于再次打开时对比；仅清空错误

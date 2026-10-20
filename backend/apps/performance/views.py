@@ -15,7 +15,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import status, viewsets
@@ -339,11 +339,13 @@ class PerformanceDashboardView(APIView):
             avg_p95=Avg("p95_response_time"),
             avg_p99=Avg("p99_response_time"),
             avg_error_rate=Avg("error_rate"),
+            total_requests=Sum("total_requests"),
         )
         summary["avg_tps"] = _round(aggregated.get("avg_tps"))
         summary["avg_p95"] = _round(aggregated.get("avg_p95"))
         summary["avg_p99"] = _round(aggregated.get("avg_p99"))
         summary["avg_error_rate"] = _round(aggregated.get("avg_error_rate"), 4)
+        summary["total_requests"] = int(aggregated.get("total_requests") or 0)
 
         trend_map: dict = {}
         for row in executions.annotate(day=TruncDate("created_at")).values("day").annotate(
@@ -352,13 +354,14 @@ class PerformanceDashboardView(APIView):
             avg_p95=Avg("p95_response_time"),
             avg_error_rate=Avg("error_rate"),
             failed=Count("id", filter=Q(status__in=("failed", "error"))),
+            passed=Count("id", filter=Q(status="passed")),
         ).order_by("day"):
             day = row["day"]
             if day is None:
                 continue
             trend_map[day.isoformat() if hasattr(day, "isoformat") else str(day)] = {
                 "executions": row["executions"],
-                "passed": 0,
+                "passed": row["passed"],
                 "failed": row["failed"],
                 "avg_tps": _round(row["avg_tps"]),
                 "avg_p95": _round(row["avg_p95"]),

@@ -14,8 +14,8 @@
       <div class="toolbar__left">
         <span class="text-small text-muted">数据范围</span>
         <el-radio-group v-model="scope" size="small" :disabled="loading">
-          <el-radio-button label="all">全部可见</el-radio-button>
-          <el-radio-button label="project" :disabled="!projectStore.currentProjectId">
+          <el-radio-button value="all">全部可见</el-radio-button>
+          <el-radio-button value="project" :disabled="!projectStore.currentProjectId">
             当前项目
           </el-radio-button>
         </el-radio-group>
@@ -122,6 +122,7 @@ import { BarChart, LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { ElMessage } from 'element-plus'
+import { Cpu, DataAnalysis, MagicStick, Refresh, Search } from '@element-plus/icons-vue'
 
 import StatCard from '@/components/StatCard.vue'
 import EmptyState from '@/components/EmptyState.vue'

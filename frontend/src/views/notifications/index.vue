@@ -31,7 +31,7 @@
     <component
       :is="activeTab.component"
       :key="activeKey"
-      :initial-channel="testChannel"
+      v-bind="activeKey === 'test' ? { initialChannel: testChannel } : {}"
       @test="handleTestRequest"
     />
   </div>

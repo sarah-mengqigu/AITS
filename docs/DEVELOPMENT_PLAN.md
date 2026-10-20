@@ -111,3 +111,25 @@ AITS/
 - **执行引擎抽象**：`BaseRunner`（API/Web/App/Perf）→ 真实子进程实现 + `SimulatedRunner`（env 开启），使执行链路在无浏览器/无压测机时可验证。
 - **通知与调度解耦**：`notifications.services.trigger_notification` 单一入口，失败只记日志。
 - **多租户边界**：所有业务对象挂 `project`，权限经 `ProjectMember.role` 判定（owner/admin 写配置，editor 写用例，viewer 只读）。
+
+---
+
+## 6. 执行结果（2026-10-20 实际交付）
+
+| 里程碑 | 计划 | 实际 |
+|---|---|---|
+| M0 基座 | settings / common / users / projects / 骨架 | ✅ 完成（43 项测试） |
+| M1 后端模块（7 路并行） | api / web / app / perf / ai / 调度 / 通知 | ✅ 全部完成，418 项测试 |
+| M2 前端功能页 | 5 路并行 | ✅ API、Web+App、AI+定时+通知 三路并行 + 性能/监控 + 个人中心补齐 |
+| M3 集成验证 | 全量测试 / 构建 / 冒烟 / 截图 | ✅ `scripts/verify.sh`、在线冒烟、10 张截图、`docs/VERIFICATION.md` |
+
+### 计划外补齐项
+- **WebSocket 流式路由**：设计文档要求 4 条 `-streaming/` 通道，实现后补注册到 `asgi.py` 并新增 4 项测试。
+- **POM 过滤参数冲突**：`?page=` 同时被 DRF 分页占用，改为 `?page_id=` 并加回归测试。
+- **项目类型自动对齐**：进入 API/Web/App/性能模块时自动切换到对应类型项目，避免空工作台（路由守卫 + 单测）。
+- **演示数据命令**：`seed_demo` 走真实 HTTP API，可重复执行，并被 2 项测试守护。
+- **OpenAPI 文档补全**：为 15 个未标注的接口补充响应类型，schema 错误降为 0。
+
+### 与计划的偏差
+- 原计划 5 路前端并行，实际先并行 3 路（依赖接口稳定后再补性能/监控），减少共享文件冲突。
+- 监控栈因 Docker daemon 不可用未实际启动，仅做配置校验与 File SD/指标单测（见验证报告已知限制）。

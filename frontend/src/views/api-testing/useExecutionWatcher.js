@@ -191,6 +191,8 @@ export function useExecutionWatcher({ onFinish } = {}) {
       })
       socket.connect()
       armWatchdog()
+      // 兜底：Celery eager / 极短任务可能在订阅前已结束，先主动拉一次详情
+      pollOnce()
     } catch (error) {
       startPolling('无法建立实时连接，已切换为轮询执行状态')
     }

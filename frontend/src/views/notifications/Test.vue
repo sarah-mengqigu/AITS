@@ -18,8 +18,8 @@
       <el-form label-width="110px" class="test-form">
         <el-form-item label="发送方式">
           <el-radio-group v-model="form.mode">
-            <el-radio label="receiver">使用接收人</el-radio>
-            <el-radio label="channel">直接指定渠道</el-radio>
+            <el-radio value="receiver">使用接收人</el-radio>
+            <el-radio value="channel">直接指定渠道</el-radio>
           </el-radio-group>
         </el-form-item>
 

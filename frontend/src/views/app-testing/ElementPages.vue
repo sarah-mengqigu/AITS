@@ -63,6 +63,7 @@
 
 <script setup>
 import { onMounted, ref, watch } from 'vue'
+import { Refresh } from '@element-plus/icons-vue'
 
 import DataTable from '@/components/DataTable.vue'
 import JsonViewer from '@/components/JsonViewer.vue'

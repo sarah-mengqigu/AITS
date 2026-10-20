@@ -84,7 +84,7 @@
       >
         <el-table-column label="用例名称" min-width="240" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="openEdit(row)">
+            <el-link type="primary" underline="never" @click="openEdit(row)">
               {{ row.name }}
             </el-link>
             <div v-if="row.description" class="case-desc">{{ row.description }}</div>
@@ -167,6 +167,7 @@
     >
       <el-form
         ref="formRef"
+        v-loading="editLoading"
         :model="form"
         :rules="rules"
         label-width="98px"
@@ -219,6 +220,7 @@
               clearable
               :loading="optionsLoading"
               placeholder="可选，关联到具体端点"
+              @change="handleEndpointChange"
             >
               <el-option
                 v-for="option in endpointSelectOptions"
@@ -512,6 +514,7 @@ const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
 const drawerVisible = ref(false)
 const drawerMode = ref('create')
 const submitting = ref(false)
+const editLoading = ref(false)
 const formRef = ref(null)
 const editingCase = ref(null)
 const optionsLoading = ref(false)
@@ -707,6 +710,7 @@ async function openEdit(row) {
   resetForm()
   drawerVisible.value = true
   loadFormOptions()
+  editLoading.value = true
   try {
     const detail = await apiTestingApi.retrieveCase(row.id)
     editingCase.value = detail
@@ -714,6 +718,8 @@ async function openEdit(row) {
   } catch (error) {
     ElMessage.error(error?.message || '用例详情加载失败，已使用列表数据')
     applyCase(row)
+  } finally {
+    editLoading.value = false
   }
   nextTick(() => formRef.value?.clearValidate())
 }
@@ -744,6 +750,14 @@ function handleCaseTypeChange(value) {
   if (value === 'scenario' && !form.rawRequestText.trim()) {
     form.rawRequestText = JSON.stringify({ steps: [] }, null, 2)
   }
+}
+
+function handleEndpointChange(endpointId) {
+  if (!endpointId || drawerMode.value !== 'create') return
+  const endpoint = endpointOptions.value.find((item) => item.id === endpointId)
+  if (!endpoint) return
+  form.method = String(endpoint.method || 'get').toUpperCase()
+  if (!form.url.trim()) form.url = endpoint.path || ''
 }
 
 function addAssertion() {

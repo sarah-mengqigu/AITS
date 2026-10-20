@@ -136,6 +136,7 @@
             :project-id="projectId"
             :refresh-key="refreshTokens.executions"
             :initial-execution-id="pendingExecutionId"
+            :active="activeTab === 'executions'"
             @initial-consumed="pendingExecutionId = null"
             @changed="bump('overview')"
             @switch-tab="switchTab"

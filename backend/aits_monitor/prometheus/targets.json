@@ -1,8 +1,6 @@
 [
   {
-    "targets": [
-      "172.20.10.8:9182"
-    ],
+    "targets": ["127.0.0.1:9182"],
     "labels": {
       "instance": "AITS-Generator",
       "role": "load-generator"

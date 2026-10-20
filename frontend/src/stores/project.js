@@ -51,6 +51,31 @@ export const useProjectStore = defineStore('project', {
       return this.currentProject
     },
 
+    /** Align the current project with the module being opened.
+     *
+     * Each test module is project-type specific (api-testing -> api, etc.).
+     * Opening a module while another type is selected would show an empty
+     * workspace, so we transparently switch to the first matching project.
+     */
+    async alignToProjectType(projectType) {
+      if (!projectType) return
+      if (!this.loaded) {
+        try {
+          await this.fetchProjects()
+        } catch (error) {
+          return
+        }
+      }
+      const current = this.currentProject
+      if (current && current.project_type === projectType) return
+      const match = this.projects.find(
+        (project) => project.project_type === projectType && project.is_active !== false,
+      )
+      if (match) {
+        this.currentProjectId = match.id
+      }
+    },
+
     upsertProject(project) {
       if (!project?.id) return
       const index = this.projects.findIndex((item) => item.id === project.id)

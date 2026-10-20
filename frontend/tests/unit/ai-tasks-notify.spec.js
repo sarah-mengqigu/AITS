@@ -1,15 +1,19 @@
 /**
- * 前端模块纯逻辑单测：AI 中心 / 定时任务 / 通知中心。
+ * 前端模块单测：AI 中心 / 定时任务 / 通知中心。
  *
  * 覆盖点（对应交付要求）：
  * 1. Cron 预览的中文描述与未来执行时间格式化；
  * 2. LLM API Key 掩码不回写真实密钥；
  * 3. 用量统计（by_day / by_agent / by_model）聚合数据转换；
  * 4. SMTP 密码掩码不回写；
- * 5. 通知测试发送载荷校验。
+ * 5. 通知测试发送载荷校验；
+ * 6. 三个模块主要视图的挂载冒烟（模板 / 组合式逻辑运行时无异常）。
  */
 
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
+import { mount } from '@vue/test-utils'
+import ElementPlus from 'element-plus'
 
 import {
   buildLlmPayload,
@@ -337,4 +341,140 @@ describe('通知中心 · 载荷构造与掩码', () => {
     ])
     expect(splitEmails('')).toEqual([])
   })
+})
+
+// ---------------------------------------------------------------------------
+// 组件挂载冒烟：真实挂载三个模块的主要视图（API 全部打桩），
+// 确保模板、组合式逻辑、props 传递在运行时不会抛错或渲染空白。
+// ---------------------------------------------------------------------------
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ name: 'ai-core', path: '/ai-core', query: {} }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}))
+
+vi.mock('vue-echarts', () => ({
+  default: { name: 'VChart', props: ['option'], render: () => null },
+}))
+
+vi.mock('@/api/aiCore', () => ({
+  aiCoreApi: {
+    listLlmConfigs: vi.fn(async () => ({ count: 0, results: [] })),
+    createLlmConfig: vi.fn(async () => ({})),
+    updateLlmConfig: vi.fn(async () => ({})),
+    removeLlmConfig: vi.fn(async () => ({})),
+    testLlmConfig: vi.fn(async () => ({ success: true })),
+    setDefaultLlmConfig: vi.fn(async () => ({})),
+    listRagConfigs: vi.fn(async () => ({ count: 0, results: [] })),
+    createRagConfig: vi.fn(async () => ({})),
+    updateRagConfig: vi.fn(async () => ({})),
+    removeRagConfig: vi.fn(async () => ({})),
+    setDefaultRagConfig: vi.fn(async () => ({})),
+    ragStats: vi.fn(async () => ({ documents: 0, chunks: 0, collection: 'default' })),
+    indexDocument: vi.fn(async () => ({ chunk_count: 1 })),
+    searchRag: vi.fn(async () => ({ count: 0, results: [], top_k: 5 })),
+    listMcpConfigs: vi.fn(async () => ({ count: 0, results: [] })),
+    createMcpConfig: vi.fn(async () => ({})),
+    updateMcpConfig: vi.fn(async () => ({})),
+    removeMcpConfig: vi.fn(async () => ({})),
+    refreshMcpTools: vi.fn(async () => ({ count: 0, status: 'connected' })),
+    listMcpTools: vi.fn(async () => ({ count: 0, results: [] })),
+    listUsageLogs: vi.fn(async () => ({ count: 0, results: [] })),
+    usageStats: vi.fn(async () => ({ total: {}, by_day: [], by_model: [], by_agent: [] })),
+    listAgents: vi.fn(async () => ({
+      count: 1,
+      results: [{ name: 'api_testcase', description: '接口用例生成' }],
+    })),
+    runAgent: vi.fn(async () => ({ status: 'success', result: {}, steps: [] })),
+  },
+}))
+
+vi.mock('@/api/scheduledTasks', () => ({
+  scheduledTasksApi: {
+    listTasks: vi.fn(async () => ({ count: 0, results: [] })),
+    createTask: vi.fn(async () => ({})),
+    updateTask: vi.fn(async () => ({})),
+    removeTask: vi.fn(async () => ({})),
+    runTask: vi.fn(async () => ({ log_id: 1, status: 'passed' })),
+    toggleTask: vi.fn(async () => ({})),
+    listLogs: vi.fn(async () => ({ count: 0, results: [] })),
+    retrieveLog: vi.fn(async () => ({})),
+    cronPreview: vi.fn(async () => ({
+      valid: true,
+      expression: '0 9 * * *',
+      description: '每天 09:00 执行',
+      next_runs: ['2025-01-01 09:00:00'],
+    })),
+  },
+}))
+
+vi.mock('@/api/notifications', () => ({
+  notificationsApi: {
+    listChannels: vi.fn(async () => ({ count: 0, results: [] })),
+    updateChannel: vi.fn(async () => ({})),
+    listReceivers: vi.fn(async () => ({ count: 0, results: [] })),
+    createReceiver: vi.fn(async () => ({})),
+    updateReceiver: vi.fn(async () => ({})),
+    removeReceiver: vi.fn(async () => ({})),
+    emailConfig: vi.fn(async () => ({ host: '', port: 465, password: '', use_ssl: true })),
+    saveEmailConfig: vi.fn(async () => ({})),
+    test: vi.fn(async () => ({ sent: 1, failed: 0, results: [] })),
+    listLogs: vi.fn(async () => ({ count: 0, results: [] })),
+    retrieveLog: vi.fn(async () => ({})),
+  },
+}))
+
+vi.mock('@/api/projects', () => ({
+  projectsApi: {
+    list: vi.fn(async () => ({ count: 1, results: [{ id: 1, name: '演示项目' }] })),
+    listEnvironments: vi.fn(async () => ({ count: 0, results: [] })),
+    listKnowledge: vi.fn(async () => ({ count: 0, results: [] })),
+  },
+}))
+
+vi.mock('@/api/apiTesting', () => ({
+  apiTestingApi: { listSuites: vi.fn(async () => ({ count: 0, results: [] })) },
+}))
+vi.mock('@/api/webTesting', () => ({
+  webTestingApi: { listSuites: vi.fn(async () => ({ count: 0, results: [] })) },
+}))
+vi.mock('@/api/appTesting', () => ({
+  appTestingApi: { listSuites: vi.fn(async () => ({ count: 0, results: [] })) },
+}))
+
+const VIEWS = {
+  'AI 中心 · 能力总览': () => import('@/views/ai-core/Overview.vue'),
+  'AI 中心 · 模型配置': () => import('@/views/ai-core/Models.vue'),
+  'AI 中心 · RAG 配置': () => import('@/views/ai-core/Rag.vue'),
+  'AI 中心 · MCP 工具': () => import('@/views/ai-core/Mcp.vue'),
+  'AI 中心 · 用量统计': () => import('@/views/ai-core/Usage.vue'),
+  'AI 中心 · Agent 调试': () => import('@/views/ai-core/Agents.vue'),
+  '定时任务 · 任务列表': () => import('@/views/scheduled-tasks/Tasks.vue'),
+  '定时任务 · 执行日志': () => import('@/views/scheduled-tasks/Logs.vue'),
+  '通知中心 · 渠道配置': () => import('@/views/notifications/Channels.vue'),
+  '通知中心 · 接收人': () => import('@/views/notifications/Receivers.vue'),
+  '通知中心 · 邮件配置': () => import('@/views/notifications/Email.vue'),
+  '通知中心 · 发送日志': () => import('@/views/notifications/Logs.vue'),
+  '通知中心 · 测试发送': () => import('@/views/notifications/Test.vue'),
+}
+
+describe('视图挂载冒烟（三个模块）', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  for (const [label, loader] of Object.entries(VIEWS)) {
+    it(`${label} 可正常挂载且渲染非空`, async () => {
+      const { default: Component } = await loader()
+      const wrapper = mount(Component, {
+        global: {
+          plugins: [ElementPlus],
+          stubs: { VChart: true },
+        },
+      })
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      expect(wrapper.html().length).toBeGreaterThan(0)
+      wrapper.unmount()
+    })
+  }
 })

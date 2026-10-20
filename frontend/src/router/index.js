@@ -2,6 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router'
 import NProgress from 'nprogress'
 
 import { useAuthStore } from '@/stores/auth'
+import { useProjectStore } from '@/stores/project'
+
+const MODULE_PROJECT_TYPES = {
+  'api-testing': 'api',
+  'web-testing': 'web',
+  'app-testing': 'app',
+  performance: 'perf',
+}
 
 NProgress.configure({ showSpinner: false, minimum: 0.15 })
 
@@ -346,6 +354,18 @@ router.beforeEach(async (to) => {
       console.warn('[router] 获取当前用户失败，跳转登录', error)
       auth.clearSession()
       return { name: 'login', query: { redirect: to.fullPath } }
+    }
+  }
+
+  // Keep the selected project in sync with the module being opened so that a
+  // Web project selection does not make the API test workspace look empty.
+  const moduleType = MODULE_PROJECT_TYPES[to.path.split('/')[1]]
+  if (moduleType) {
+    const projects = useProjectStore()
+    try {
+      await projects.alignToProjectType(moduleType)
+    } catch (error) {
+      console.warn('[router] 对齐项目类型失败', error)
     }
   }
 

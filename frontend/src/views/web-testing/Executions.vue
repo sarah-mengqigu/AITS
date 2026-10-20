@@ -60,7 +60,7 @@
       >
         <el-table-column label="执行名称" min-width="210" show-overflow-tooltip>
           <template #default="{ row }">
-            <el-link type="primary" :underline="false" @click="openDetail(row)">{{ row.name }}</el-link>
+            <el-link type="primary" underline="never" @click="openDetail(row)">{{ row.name }}</el-link>
           </template>
         </el-table-column>
         <el-table-column label="套件" min-width="150" show-overflow-tooltip>
