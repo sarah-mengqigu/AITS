@@ -1,9 +1,11 @@
 """Guards the ``seed_demo`` management command (the out-of-box demo path)."""
 
+import tempfile
 from io import StringIO
+from pathlib import Path
 
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from apps.api_testing.models import APITestCase, APITestExecution, APITestSuite
 from apps.app_testing.models import AppTestCase, AppTestRun
@@ -14,6 +16,18 @@ from apps.web_testing.models import WebUITestCase, WebUITestExecution
 
 
 class SeedDemoCommandTests(TestCase):
+    def setUp(self):
+        # The seed runs a performance scenario which rewrites the File SD file;
+        # isolate it so tests never dirty the repository.
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        override = override_settings(
+            PROMETHEUS_TARGETS_FILE=str(Path(self._tmp.name) / "targets.json")
+        )
+        override.enable()
+        self.addCleanup(override.disable)
+
+
     def test_seed_creates_full_workspace(self):
         out = StringIO()
         call_command("seed_demo", stdout=out)

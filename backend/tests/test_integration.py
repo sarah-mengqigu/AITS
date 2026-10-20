@@ -18,10 +18,12 @@ test is deterministic and offline.
 
 import io
 import json
+import tempfile
+from pathlib import Path
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
 User = get_user_model()
@@ -93,6 +95,23 @@ LOOPBACK_WEBHOOK = "https://oapi.dingtalk.com/robot/send?access_token=integratio
 
 class IntegrationFlowTests(TestCase):
     maxDiff = None
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # The performance step rewrites the Prometheus File SD file; keep it in
+        # a temp directory so tests never dirty the repository.
+        cls._sd_tmp = tempfile.TemporaryDirectory()
+        cls._sd_override = override_settings(
+            PROMETHEUS_TARGETS_FILE=str(Path(cls._sd_tmp.name) / "targets.json")
+        )
+        cls._sd_override.enable()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._sd_override.disable()
+        cls._sd_tmp.cleanup()
+        super().tearDownClass()
 
     @classmethod
     def setUpTestData(cls):
