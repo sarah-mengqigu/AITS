@@ -88,6 +88,53 @@ class ChatModelTests(TestCase):
         model = build_chat_model(azure)
         self.assertEqual(model.default_headers.get("api-key"), "azure-key")
 
+    @override_settings(AI_MOCK_MODE=False)
+    def test_deepseek_provider_builds_chat_deepseek(self):
+        config = LLMConfiguration.objects.create(
+            name="deepseek-chat",
+            provider="deepseek",
+            model_name="deepseek-chat",
+            api_key="sk-deepseek-test",
+            base_url="",
+            temperature=0.2,
+            max_tokens=2048,
+            model_type="text",
+        )
+        service = LLMService(config=config)
+        # provider defaults are resolved by LLMService and passed to LangChain
+        self.assertEqual(service.base_url, "https://api.deepseek.com/v1")
+        model = build_chat_model(config, base_url=service.base_url)
+        self.assertEqual(type(model).__name__, "ChatDeepSeek")
+        self.assertEqual(model.model_name, "deepseek-chat")
+        self.assertEqual(model.api_base, "https://api.deepseek.com/v1")
+        self.assertEqual(model.max_tokens, 2048)
+
+    def test_deepseek_defaults_to_deepseek_chat_model(self):
+        config = LLMConfiguration.objects.create(
+            name="deepseek-default-model",
+            provider="deepseek",
+            model_name="",
+            api_key="sk-deepseek-test",
+            model_type="text",
+        )
+        model = build_chat_model(config)
+        self.assertEqual(model.model_name, "deepseek-chat")
+
+    def test_deepseek_falls_back_to_openai_client_without_package(self):
+        config = LLMConfiguration.objects.create(
+            name="deepseek-fallback",
+            provider="deepseek",
+            model_name="deepseek-chat",
+            api_key="sk-deepseek-test",
+            model_type="text",
+        )
+        with mock.patch(
+            "apps.ai_core.services.langchain_bridge.DEEPSEEK_AVAILABLE", False
+        ):
+            model = build_chat_model(config, base_url="https://api.deepseek.com/v1")
+        self.assertEqual(type(model).__name__, "ChatOpenAI")
+        self.assertEqual(model.openai_api_base, "https://api.deepseek.com/v1")
+
     @override_settings(AI_MOCK_MODE=False, AITS_LLM_BACKEND="langchain")
     def test_llm_service_uses_langchain_backend(self):
         fake = {

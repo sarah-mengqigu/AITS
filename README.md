@@ -14,7 +14,7 @@ LangGraph 多智能体编排、Django Channels 实时推送、Prometheus + Grafa
 | 前端 | Vue 3.3 · Vite 5 · Element Plus 2.4 · Pinia 2 · Vue Router 4 · ECharts 5 |
 | 后端 | Django 4.2 · DRF 3.14 · SimpleJWT · django-filter · drf-spectacular |
 | 异步 / 实时 | Celery 5.3 · django-celery-beat · Channels 4 · ASGI (Uvicorn/Daphne) |
-| AI | 双引擎编排（内置 StateGraph / LangGraph 1.0.5）· LangChain 胶水层（ChatOpenAI / Prompt / Parser / Embeddings / VectorStore / Tools）· RAG · MCP |
+| AI | 双引擎编排（内置 StateGraph / LangGraph 1.0.5）· LangChain 胶水层（ChatOpenAI / ChatDeepSeek / Prompt / Parser / Embeddings / VectorStore / Tools）· RAG · MCP |
 | 测试执行 | HttpRunner 兼容 YAML · Playwright · MidScene · Sonic · Locust |
 | 数据 / 可观测 | SQLite/PostgreSQL · Redis · Prometheus · Grafana |
 
@@ -112,6 +112,32 @@ cd backend
 定时任务              工作日 9 点接口回归（最近一次 passed）
 ```
 
+## 接入真实大模型（以 DeepSeek 为例）
+
+平台默认使用确定性 Mock 模型（离线可跑）；接入真实模型只需数据库配置，无需改代码：
+
+```bash
+# 1) 安装可选 AI 依赖（LangGraph + LangChain + langchain-deepseek）
+cd backend && .venv/bin/pip install -r requirements-ai.txt
+```
+
+2. 登录后进入 **AI 中心 → 模型配置 → 新建**：
+
+| 字段 | 值 |
+|---|---|
+| Provider | `deepseek`（走 `langchain_deepseek.ChatDeepSeek`） |
+| 模型名称 | `deepseek-chat`（或 `deepseek-reasoner`） |
+| API Key | `sk-...` |
+| Base URL | 留空即用默认 `https://api.deepseek.com/v1`；也可填自建网关 |
+| 类型 | `text` |
+
+3. 勾选 **设为默认**（项目级默认优先于全局默认），保存后点 **测试连通性**。
+4. 之后 7 个 Agent 自动使用该模型；把该模型停用或切回 Mock 即可回到离线确定性模式。
+
+> 环境变量 `AI_MOCK_MODE=1` 会强制所有调用走 Mock（用于演示/CI）；生产保持 `0`。
+> 模型路由：`deepseek` → `ChatDeepSeek`，其余 provider → `ChatOpenAI`（OpenAI 兼容）；
+> 安装缺失或设置 `AITS_LLM_BACKEND=http` 时回退到内置 requests 客户端。
+
 ## 界面预览
 
 | 仪表盘 | API 模块与端点 |
@@ -131,7 +157,7 @@ cd backend
 ## 测试与验证
 
 ```bash
-./scripts/verify.sh            # 后端 444 项测试（LangChain + 纯回退两种路径）+ 前端单测/构建 + 在线冒烟
+./scripts/verify.sh            # 后端 447 项测试（LangChain + 纯回退两种路径）+ 前端单测/构建 + 在线冒烟
 cd backend && AITS_ENV=test .venv/bin/python manage.py test apps tests -v 1
 cd frontend && pnpm test -- --run && pnpm build
 ```

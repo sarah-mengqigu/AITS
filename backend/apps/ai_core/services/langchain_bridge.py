@@ -54,6 +54,7 @@ def _spec_available(module: str) -> bool:
 # the in-memory vector store. Measured: langchain_openai ~+54 MB RSS,
 # InMemoryVectorStore ~+38 MB; langchain_core itself is only ~+12 MB.
 CHAT_OPENAI_AVAILABLE = LANGCHAIN_AVAILABLE and _spec_available("langchain_openai")
+DEEPSEEK_AVAILABLE = LANGCHAIN_AVAILABLE and _spec_available("langchain_deepseek")
 VECTORSTORE_AVAILABLE = (
     LANGCHAIN_AVAILABLE
     and _spec_available("langchain_core.vectorstores")
@@ -172,40 +173,68 @@ class UsageTrackingHandler(BaseCallbackHandler):
 
 
 def build_chat_model(config, *, temperature=None, max_tokens=None,
-                     timeout: int | None = None):
-    """Build a ``ChatOpenAI`` bound to an ``LLMConfiguration``.
+                     timeout: int | None = None, base_url: str | None = None):
+    """Build the right LangChain chat model for an ``LLMConfiguration``.
 
-    All OpenAI-compatible providers (OpenAI / DeepSeek / Qwen / local HF /
-    Azure) are supported through ``base_url`` + provider specific headers.
+    Provider routing:
+
+    * ``deepseek`` → ``langchain_deepseek.ChatDeepSeek`` (falls back to the
+      OpenAI-compatible client when the package is absent);
+    * everything else (OpenAI / Qwen / local HF / Azure / custom) →
+      ``langchain_openai.ChatOpenAI`` with ``base_url`` + provider headers.
     """
+    provider = str(getattr(config, "provider", "") or "openai").lower()
+    model = str(getattr(config, "model_name", "") or "")
+    resolved_base_url = str(
+        base_url or getattr(config, "base_url", "") or ""
+    ).rstrip("/")
+    api_key = str(getattr(config, "api_key", "") or "").strip()
+    resolved_temperature = float(
+        getattr(config, "temperature", 0.7) if temperature is None else temperature
+    )
+    resolved_max_tokens = int(
+        getattr(config, "max_tokens", 2048) if max_tokens is None else max_tokens
+    )
+
+    # --- DeepSeek: dedicated LangChain integration --------------------
+    if provider == "deepseek" and DEEPSEEK_AVAILABLE:
+        from langchain_deepseek import ChatDeepSeek  # lazy import
+
+        deepseek_kwargs: dict[str, Any] = {
+            "model": model or "deepseek-chat",
+            "temperature": resolved_temperature,
+            "max_tokens": resolved_max_tokens,
+            "max_retries": 1,
+        }
+        if api_key:
+            deepseek_kwargs["api_key"] = api_key
+        if resolved_base_url:
+            deepseek_kwargs["api_base"] = resolved_base_url
+        if timeout:
+            deepseek_kwargs["timeout"] = timeout
+        return ChatDeepSeek(**deepseek_kwargs)
+
     if not CHAT_OPENAI_AVAILABLE:
         raise BusinessError(
             message="未安装 langchain-openai，无法使用 LangChain 模型客户端",
             code="langchain_unavailable",
         )
     from langchain_openai import ChatOpenAI  # lazy: heavy import (openai SDK)
-    provider = str(getattr(config, "provider", "") or "openai").lower()
-    model = str(getattr(config, "model_name", "") or "")
-    base_url = str(getattr(config, "base_url", "") or "").rstrip("/")
-    api_key = str(getattr(config, "api_key", "") or "").strip()
+
     headers = {}
     if provider == "azure" and api_key:
         headers["api-key"] = api_key
         api_key = "azure"
     kwargs: dict[str, Any] = {
         "model": model or "gpt-4o-mini",
-        "temperature": float(
-            getattr(config, "temperature", 0.7) if temperature is None else temperature
-        ),
-        "max_tokens": int(
-            getattr(config, "max_tokens", 2048) if max_tokens is None else max_tokens
-        ),
+        "temperature": resolved_temperature,
+        "max_tokens": resolved_max_tokens,
         "max_retries": 1,
     }
     if api_key:
         kwargs["api_key"] = api_key
-    if base_url:
-        kwargs["base_url"] = base_url
+    if resolved_base_url:
+        kwargs["base_url"] = resolved_base_url
     if headers:
         kwargs["default_headers"] = headers
     if timeout:

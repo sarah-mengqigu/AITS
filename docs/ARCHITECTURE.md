@@ -250,7 +250,9 @@ submit(run_suite, execution.id)   # 测试环境自动 eager 执行
   - 可选依赖清单：`backend/requirements-ai.txt`（`langgraph==1.0.5`），核心依赖 `requirements.txt` 不包含它，保证离线可运行；
   - 兼容性由 `apps/ai_core/tests/test_engines.py` 守护：7 个 Agent 在两种引擎下输出逐字节一致。
 - **LangChain 胶水层（可选增强，2026-10 引入）**：
-  - LLM 客户端：`AITS_LLM_BACKEND=auto|langchain|http`；可用时走 `langchain_openai.ChatOpenAI`，否则回退自研 requests 客户端；
+  - LLM 客户端：`AITS_LLM_BACKEND=auto|langchain|http`；可用时按 provider 路由 ——
+    `deepseek` 走 `langchain_deepseek.ChatDeepSeek`，其余（OpenAI / Qwen / 本地 HF / Azure / 自定义）
+    走 `langchain_openai.ChatOpenAI`（OpenAI 兼容 `base_url`）；未安装对应包或显式设为 http 时回退自研 requests 客户端；
   - Prompt：`ChatPromptTemplate`（`render_messages()`），保留纯 dict 回退；
   - 结构化输出：`JsonOutputParser` + `extract_first_object` 容错兜底；
   - RAG：标准 `Embeddings` 接口（确定性哈希实现，离线可用）+ `InMemoryVectorStore` 检索，不可用时回退余弦扫描；

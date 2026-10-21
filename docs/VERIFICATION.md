@@ -9,7 +9,7 @@
 
 | 维度 | 结果 |
 |---|---|
-| 后端自动化测试 | **444 passed / 0 failed**（LangChain 全启用 + 纯内置回退各跑一遍） |
+| 后端自动化测试 | **447 passed / 0 failed**（LangChain 全启用 + 纯内置回退各跑一遍） |
 | 后端系统检查 | `manage.py check` 0 issues；`makemigrations --check` 无缺失迁移 |
 | API 文档 | 145 paths / **269 operations**，0 schema 错误（`docs/openapi.yaml` / `docs/API.md`） |
 | 前端单元测试 | **129 passed**（8 个 spec） |
@@ -33,11 +33,11 @@
 | `apps.web_testing` | 40 | 模块树、用例、POM/备选定位、Playwright 脚本可编译、MidScene YAML、Allure result JSON、套件执行、real 模式缺依赖落 error |
 | `apps.app_testing` | 46 | Sonic 登录/缓存/401 重登、3001/3002/3003 文案、步骤双向转换、simulated 执行、未配置降级 |
 | `apps.performance` | 75 | locustfile 生成可编译、CSV/P95/错误率、阈值判定、Dashboard 零值结构、Grafana webhook、AI 规则诊断降级、File SD |
-| `apps.ai_core` | 90 | Mock LLM 确定性、usage 计量、api_key 掩码、RAG、StateGraph 语义、7 个 Agent 契约、**双引擎一致性**、**LangChain 胶水层**、权限 |
+| `apps.ai_core` | 93 | Mock LLM 确定性、usage 计量、api_key 掩码、RAG、StateGraph 语义、7 个 Agent 契约、**双引擎一致性**、**LangChain 胶水层（含 DeepSeek 路由）**、权限 |
 | `apps.scheduled_tasks` | 59 | PeriodicTask 同步/去重/禁用/删除、cron 校验与预览、三类 dispatch、部分失败 pass_rate、通知联动与异常隔离 |
 | `apps.notifications` | 40 | Markdown/HTML 组装、always/fail 判定、多渠道与单渠道失败隔离、errcode 校验、SMTP 动态连接、日志 |
 | `tests`（集成） | 15 | 9 个跨模块 E2E 流程 + 4 个 WebSocket（JWT/5 条路由/匿名拒绝）+ 2 个 `seed_demo` 守护 |
-| **合计** | **444** | |
+| **合计** | **447** | |
 
 关键集成测试（`backend/tests/test_integration.py`）逐步验证：
 
@@ -136,8 +136,8 @@ Web/App/性能各 1 条绿色执行、AI Mock 模型 + RAG + MCP 配置、通知
 | 非法图（未注册边/缺 entry point） | 两引擎均抛 `BusinessError(code="invalid_graph")` |
 | 超步数 | 内置抛 `agent_max_steps`；LangGraph 的 `GraphRecursionError` 被翻译为同一错误码 |
 | 条件边路由 | 两引擎选择同一分支、输出一致 |
-| 全量回归（auto = LangGraph） | **444 passed** |
-| 全量回归（`AITS_AGENT_ENGINE=builtin`） | **444 passed** |
+| 全量回归（auto = LangGraph） | **447 passed** |
+| 全量回归（`AITS_AGENT_ENGINE=builtin`） | **447 passed** |
 | 未安装 langgraph 的场景 | `auto` 自动回退内置；`langgraph` 显式指定时告警并回退，服务不受影响 |
 
 复现：
@@ -155,7 +155,7 @@ AITS_ENV=test AITS_AGENT_ENGINE=builtin .venv/bin/python manage.py test apps -v 
 
 | 能力 | LangChain 实现 | 回退实现 | 验证 |
 |---|---|---|---|
-| Chat 模型 | `langchain_openai.ChatOpenAI`（OpenAI 兼容 base_url；Azure 用 `api-key` header） | 自研 `requests` 客户端 | 构造参数/密码/azure header 单测 |
+| Chat 模型 | `langchain_openai.ChatOpenAI`（OpenAI 兼容 base_url；Azure 用 `api-key` header）<br>`langchain_deepseek.ChatDeepSeek`（provider=deepseek） | 自研 `requests` 客户端 | 构造参数/密码/azure header/DeepSeek 路由与回退单测 |
 | Prompt | `ChatPromptTemplate` | 纯 dict messages | 含 JSON 大括号的 prompt 不被误解析 |
 | 结构化输出 | `JsonOutputParser` | `extract_first_object` | fenced / prose JSON 均可解析，垃圾输入返回 None |
 | Embeddings | `langchain_core.embeddings.Embeddings` 子类（确定性哈希，离线） | 同一函数 | 接口维度、确定性与一致性 |
@@ -172,8 +172,8 @@ AITS_ENV=test AITS_AGENT_ENGINE=builtin .venv/bin/python manage.py test apps -v 
 | 启动内存 | Django 59 MB → **85 MB**（+26 MB，langchain-core 常驻；重依赖懒加载） |
 | 重依赖首次使用 | `langchain-openai` ≈ +54 MB、`InMemoryVectorStore` ≈ +38 MB（只在实际调用时发生） |
 | 启动耗时 | `django.setup()` 0.53 s；导入 ai_core 1.02 s（langchain-core 约 +0.5 s） |
-| 全量回归 | **444 passed**（LangChain 全启用） |
-| 纯回退回归 | **444 passed**（`AITS_AGENT_ENGINE=builtin AITS_LLM_BACKEND=http`） |
+| 全量回归 | **447 passed**（LangChain 全启用） |
+| 纯回退回归 | **447 passed**（`AITS_AGENT_ENGINE=builtin AITS_LLM_BACKEND=http`） |
 
 复现：
 

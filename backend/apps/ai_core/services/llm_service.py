@@ -503,6 +503,7 @@ class LLMService:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 timeout=timeout,
+                base_url=self.base_url,
             )
             if response_format is not None:
                 model = model.bind(response_format=response_format)

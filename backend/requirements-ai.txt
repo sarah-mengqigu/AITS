@@ -22,6 +22,8 @@ langgraph==1.0.5
 
 # --- LangChain glue: chat model / prompt / parser / tools / callbacks ----
 langchain-openai==1.7.2
+# DeepSeek dedicated integration (provider=deepseek -> ChatDeepSeek)
+langchain-deepseek==1.1.1
 # required by langchain_core.vectorstores.InMemoryVectorStore
 numpy==2.2.6
 
