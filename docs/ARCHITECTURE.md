@@ -243,7 +243,12 @@ submit(run_suite, execution.id)   # 测试环境自动 eager 执行
   - `services/agents/base.py`：`BaseAgent`（状态 TypedDict、`run(payload, stream_task_id=None) -> dict`、节点回调推送 WS、token 计量、结构化输出解析、失败重试）。
   - 7 个 Agent：`api_testcase_agent.py`、`api_scenario_agent.py`、`postman_script_translator.py`、`webui_testcase_agent.py`、`webui_playwright_agent.py`、`midscene_agent.py`、`midscene_script_agent.py`。
   - `services/agents/registry.py`：`AGENTS: dict[str, type[BaseAgent]]`、`get_agent(name)`、`run_agent(name, payload)`。
-- **LangGraph 可选**：若 `import langgraph` 成功则用 `StateGraph`，否则用内置 `apps/ai_core/services/graph.py` 的兼容实现（同样的 `StateGraph/START/END/compile().invoke()` 语义）。禁止硬依赖。
+- **双引擎编排（LangGraph 兼容）**：
+  - 业务代码只调用 `get_stategraph(state_schema)`（见 `apps/ai_core/services/graph.py`），不直接依赖第三方库；
+  - `settings.AITS_AGENT_ENGINE`：`auto`（默认，装了 LangGraph 就用）/ `builtin`（强制内置）/ `langgraph`（优先真实库，缺失时告警回退）；
+  - 两种引擎共享同一套建图 API、**编译期校验**（`invalid_graph`）与**步数保护**（`agent_max_steps`，LangGraph 的 `GraphRecursionError` 会被翻译）；
+  - 可选依赖清单：`backend/requirements-ai.txt`（`langgraph==1.0.5`），核心依赖 `requirements.txt` 不包含它，保证离线可运行；
+  - 兼容性由 `apps/ai_core/tests/test_engines.py` 守护：7 个 Agent 在两种引擎下输出逐字节一致。
 
 ### 2.8 scheduled_tasks
 模型：

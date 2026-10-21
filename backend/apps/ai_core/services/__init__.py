@@ -11,7 +11,14 @@ from apps.ai_core.services.agents.registry import (
     list_agents,
     run_agent,
 )
-from apps.ai_core.services.graph import END, START, CompiledGraph, StateGraph
+from apps.ai_core.services.graph import (
+    END,
+    START,
+    CompiledGraph,
+    StateGraph,
+    get_stategraph,
+    resolve_engine,
+)
 from apps.ai_core.services.llm_service import LLMResult, LLMService
 from apps.ai_core.services.model_manager import ModelManager, get_model_manager
 from apps.ai_core.services.rag_service import RAGService, embed_text, split_text
@@ -27,6 +34,8 @@ __all__ = [
     "RAGService",
     "START",
     "StateGraph",
+    "get_stategraph",
+    "resolve_engine",
     "embed_text",
     "get_agent",
     "get_model_manager",

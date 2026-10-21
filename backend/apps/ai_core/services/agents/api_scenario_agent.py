@@ -62,9 +62,9 @@ class APIScenarioAgent(BaseAgent):
     # graph
     # ------------------------------------------------------------------
     def build_graph(self):
-        from apps.ai_core.services.graph import StateGraph
+        from apps.ai_core.services.graph import get_stategraph
 
-        graph = StateGraph(self.state_schema)
+        graph = get_stategraph(self.state_schema)
         graph.add_node("prepare", self._wrap("prepare", self._node_prepare))
         graph.add_node("intent", self._wrap("intent", self._node_intent))
         graph.add_node(

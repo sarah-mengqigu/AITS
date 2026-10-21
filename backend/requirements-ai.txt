@@ -1,0 +1,18 @@
+# Optional AI orchestration engine (LangGraph).
+#
+# The platform runs fully without this file: apps/ai_core ships a built-in
+# StateGraph-compatible engine (backend/apps/ai_core/services/graph.py).
+#
+# Install with:
+#     backend/.venv/bin/pip install -r backend/requirements-ai.txt
+#
+# Then select it with AITS_AGENT_ENGINE=langgraph (or leave "auto" to use it
+# whenever the package is importable).
+#
+# Footprint measured on macOS arm64 / Python 3.10.9:
+#   * download ~7.9 MB (39 wheels, all prebuilt - no compiler needed)
+#   * installed ~+42 MB
+#   * RSS: +50 MB standalone, +25 MB inside a Django process
+#   * import: ~0.3 s warm (first cold import ~5.9 s while writing bytecode)
+# Pinned to the version referenced by the v2 design document.
+langgraph==1.0.5

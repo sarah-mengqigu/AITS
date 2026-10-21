@@ -18,7 +18,7 @@ import logging
 import time
 from typing import Any, TypedDict
 
-from apps.ai_core.services.graph import END, StateGraph
+from apps.ai_core.services.graph import END, get_stategraph
 from apps.ai_core.services.model_manager import get_model_manager
 from apps.ai_core.services.rag_service import RAGService
 from apps.common.api.api_exception_handler import BusinessError
@@ -64,7 +64,7 @@ class BaseAgent:
     # graph construction
     # ------------------------------------------------------------------
     def build_graph(self):
-        graph = StateGraph(self.state_schema)
+        graph = get_stategraph(self.state_schema)
         graph.add_node("prepare", self._wrap("prepare", self._node_prepare))
         graph.add_node("retrieve", self._wrap("retrieve", self.rag_retrieve))
         graph.add_node("generate", self._wrap("generate", self.llm_generate))

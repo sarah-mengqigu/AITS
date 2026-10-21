@@ -1,3 +1,5 @@
+# Core dependencies - the platform runs fully without any optional AI engine.
+# For the optional LangGraph orchestration engine see requirements-ai.txt.
 # ---- Core web / API ----
 Django==4.2.25
 djangorestframework==3.14.0

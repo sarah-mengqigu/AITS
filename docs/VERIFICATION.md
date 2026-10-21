@@ -9,7 +9,7 @@
 
 | 维度 | 结果 |
 |---|---|
-| 后端自动化测试 | **418 passed / 0 failed**（11 个测试集合，含跨模块 E2E 与 WebSocket） |
+| 后端自动化测试 | **428 passed / 0 failed**（双引擎各跑一遍，含跨模块 E2E 与 WebSocket） |
 | 后端系统检查 | `manage.py check` 0 issues；`makemigrations --check` 无缺失迁移 |
 | API 文档 | 145 paths / **269 operations**，0 schema 错误（`docs/openapi.yaml` / `docs/API.md`） |
 | 前端单元测试 | **129 passed**（8 个 spec） |
@@ -33,11 +33,11 @@
 | `apps.web_testing` | 40 | 模块树、用例、POM/备选定位、Playwright 脚本可编译、MidScene YAML、Allure result JSON、套件执行、real 模式缺依赖落 error |
 | `apps.app_testing` | 46 | Sonic 登录/缓存/401 重登、3001/3002/3003 文案、步骤双向转换、simulated 执行、未配置降级 |
 | `apps.performance` | 75 | locustfile 生成可编译、CSV/P95/错误率、阈值判定、Dashboard 零值结构、Grafana webhook、AI 规则诊断降级、File SD |
-| `apps.ai_core` | 64 | Mock LLM 确定性、usage 计量、api_key 掩码、RAG 切块/检索/stats、StateGraph 语义、7 个 Agent 契约、权限 |
+| `apps.ai_core` | 74 | Mock LLM 确定性、usage 计量、api_key 掩码、RAG 切块/检索/stats、StateGraph 语义、7 个 Agent 契约、**双引擎一致性**、权限 |
 | `apps.scheduled_tasks` | 59 | PeriodicTask 同步/去重/禁用/删除、cron 校验与预览、三类 dispatch、部分失败 pass_rate、通知联动与异常隔离 |
 | `apps.notifications` | 40 | Markdown/HTML 组装、always/fail 判定、多渠道与单渠道失败隔离、errcode 校验、SMTP 动态连接、日志 |
 | `tests`（集成） | 15 | 9 个跨模块 E2E 流程 + 4 个 WebSocket（JWT/5 条路由/匿名拒绝）+ 2 个 `seed_demo` 守护 |
-| **合计** | **418** | |
+| **合计** | **428** | |
 
 关键集成测试（`backend/tests/test_integration.py`）逐步验证：
 
@@ -114,6 +114,40 @@ Web/App/性能各 1 条绿色执行、AI Mock 模型 + RAG + MCP 配置、通知
 | `11-performance.png` | 性能测试总览（TPS / P95 / 错误率 / 最近执行） |
 
 ---
+
+## 4.1 Agent 双引擎（LangGraph）兼容性验证
+
+`settings.AITS_AGENT_ENGINE` 支持 `auto` / `builtin` / `langgraph`，业务代码只依赖
+`get_stategraph()`，两种引擎共享建图 API、编译期校验与步数保护。
+
+| 项 | 实测 |
+|---|---|
+| 依赖体积 | 下载 7.9 MB（39 个预编译 wheel，无需编译器）；安装后 **+42 MB** |
+| 进程内存 | 独立进程 +50 MB；Django 进程内 **+25 MB**（62.1 → 87.4 MB RSS） |
+| 启动开销 | 热 import **0.27–0.37 s**（首次冷 import 5.9 s 用于生成 bytecode） |
+| 图执行 | 4 节点图 **3–4 ms**，额外内存 ~0.3 MB |
+| 版本 | `langgraph==1.0.5`（设计文档锁定版本），`pip check` 无冲突 |
+
+兼容性证据：
+
+| 验证 | 结果 |
+|---|---|
+| 7 个 Agent 双引擎输出对比（同 payload + Mock 模型） | **result JSON 逐字节一致，节点顺序一致**（`test_engines.py`） |
+| 非法图（未注册边/缺 entry point） | 两引擎均抛 `BusinessError(code="invalid_graph")` |
+| 超步数 | 内置抛 `agent_max_steps`；LangGraph 的 `GraphRecursionError` 被翻译为同一错误码 |
+| 条件边路由 | 两引擎选择同一分支、输出一致 |
+| 全量回归（auto = LangGraph） | **428 passed** |
+| 全量回归（`AITS_AGENT_ENGINE=builtin`） | **428 passed** |
+| 未安装 langgraph 的场景 | `auto` 自动回退内置；`langgraph` 显式指定时告警并回退，服务不受影响 |
+
+复现：
+
+```bash
+cd backend
+.venv/bin/pip install -r requirements-ai.txt          # 可选依赖
+AITS_ENV=test .venv/bin/python manage.py test apps.ai_core -v 1                    # auto → LangGraph
+AITS_ENV=test AITS_AGENT_ENGINE=builtin .venv/bin/python manage.py test apps -v 1   # 纯内置引擎
+```
 
 ## 5. 监控与可观测性验证
 

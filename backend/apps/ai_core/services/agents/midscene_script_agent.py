@@ -15,7 +15,7 @@ from apps.ai_core.services.agents.midscene_agent import (
     build_midscene_document,
     validate_midscene_content,
 )
-from apps.ai_core.services.graph import END, StateGraph
+from apps.ai_core.services.graph import END, get_stategraph
 from apps.common.parsers.yaml_json import dumps_yaml, parse_yaml
 
 
@@ -49,7 +49,7 @@ class MidsceneScriptAgent(BaseAgent):
     # graph: prepare -> generate -> validate -> (repair -> validate)* -> END
     # ------------------------------------------------------------------
     def build_graph(self):
-        graph = StateGraph(self.state_schema)
+        graph = get_stategraph(self.state_schema)
         graph.add_node("prepare", self._wrap("prepare", self._node_prepare))
         graph.add_node("generate", self._wrap("generate", self._node_generate))
         graph.add_node("validate", self._wrap("validate", self._node_validate))

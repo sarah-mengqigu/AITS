@@ -6,7 +6,7 @@ import re
 from typing import Any, TypedDict
 
 from apps.ai_core.services.agents.base import BaseAgent
-from apps.ai_core.services.graph import END
+from apps.ai_core.services.graph import END, get_stategraph
 
 ALLOWED_ACTIONS = {
     "goto",
@@ -169,9 +169,7 @@ class WebUITestCaseAgent(BaseAgent):
         return (state.get("payload") or {}).get("requirement") or ""
 
     def build_graph(self):
-        from apps.ai_core.services.graph import StateGraph
-
-        graph = StateGraph(self.state_schema)
+        graph = get_stategraph(self.state_schema)
         graph.add_node("prepare", self._wrap("prepare", self._node_prepare))
         graph.add_node("design", self._wrap("design", self._node_design))
         graph.add_node("review", self._wrap("review", self._node_review))
