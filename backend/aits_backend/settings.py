@@ -318,6 +318,8 @@ AITS_EXECUTION_MODE = env("AITS_EXECUTION_MODE", "simulated").lower()
 AITS_MAX_AGENT_STEPS = env_int("AITS_MAX_AGENT_STEPS", 12)
 # Agent orchestration engine: auto (LangGraph when installed) | builtin | langgraph
 AITS_AGENT_ENGINE = env("AITS_AGENT_ENGINE", "auto").strip().lower()
+# LLM client backend: auto (LangChain when installed) | langchain | http
+AITS_LLM_BACKEND = env("AITS_LLM_BACKEND", "auto").strip().lower()
 # langsmith is a transitive dependency of langgraph; keep it offline by default.
 os.environ.setdefault("LANGSMITH_TRACING", "false")
 os.environ.setdefault("LANGCHAIN_TRACING_V2", "false")

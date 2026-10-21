@@ -61,7 +61,10 @@ class MockProviderTests(TestCase):
         self.assertIn("生成用例", log.request_preview)
 
 
+@override_settings(AITS_LLM_BACKEND="http")
 class RemoteProviderTests(TestCase):
+    """HTTP fallback backend (``AITS_LLM_BACKEND=http``)."""
+
     def setUp(self):
         self.config = LLMConfiguration.objects.create(
             name="openai-global",

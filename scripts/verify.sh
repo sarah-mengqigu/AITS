@@ -25,9 +25,10 @@ step "Backend: full test suite"
 ( cd "$BACKEND" && AITS_ENV=test "$PY" manage.py test apps tests -v 1 ) \
   && ok "backend tests" || fail "backend tests"
 
-step "Backend: built-in agent engine compatibility"
-( cd "$BACKEND" && AITS_ENV=test AITS_AGENT_ENGINE=builtin "$PY" manage.py test apps.ai_core -v 1 ) \
-  && ok "built-in engine tests" || fail "built-in engine tests"
+step "Backend: fallback path (built-in engine + HTTP LLM client)"
+( cd "$BACKEND" && AITS_ENV=test AITS_AGENT_ENGINE=builtin AITS_LLM_BACKEND=http \
+    "$PY" manage.py test apps.ai_core -v 1 ) \
+  && ok "fallback tests" || fail "fallback tests"
 
 if [[ $SKIP_FRONTEND -eq 0 && -d "$ROOT/frontend" ]]; then
   step "Frontend: unit tests"

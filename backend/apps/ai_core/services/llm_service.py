@@ -26,6 +26,11 @@ from django.conf import settings
 
 from apps.common.api.api_exception_handler import BusinessError
 from apps.common.metrics import record_ai
+from apps.ai_core.services.langchain_bridge import (
+    CHAT_OPENAI_AVAILABLE,
+    build_chat_model,
+    invoke_chat_model,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -348,6 +353,14 @@ class LLMService:
         return bool(getattr(settings, "AI_MOCK_MODE", False))
 
     @property
+    def backend(self) -> str:
+        """Which client to use: ``langchain`` when available, else ``http``."""
+        configured = str(getattr(settings, "AITS_LLM_BACKEND", "auto") or "auto").lower()
+        if configured == "http":
+            return "http"
+        return "langchain" if CHAT_OPENAI_AVAILABLE else "http"
+
+    @property
     def provider_name(self) -> str:
         if self.is_mock:
             return "mock"
@@ -396,6 +409,13 @@ class LLMService:
         try:
             if self.is_mock:
                 result = self._mock_chat(messages)
+            elif self.backend == "langchain":
+                result = self._langchain_chat(
+                    messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format=response_format,
+                )
             else:
                 result = self._remote_chat(
                     messages,
@@ -471,6 +491,37 @@ class LLMService:
             raw={"mock": True, "provider": "mock", "model": self.model_name},
             provider="mock",
             model=self.model_name,
+        )
+
+    def _langchain_chat(self, messages, temperature=None, max_tokens=None,
+                        response_format=None) -> LLMResult:
+        """Call the model through LangChain's ``ChatOpenAI``."""
+        timeout = int(getattr(settings, "AI_REQUEST_TIMEOUT", 120) or 120)
+        try:
+            model = build_chat_model(
+                self.config,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                timeout=timeout,
+            )
+            if response_format is not None:
+                model = model.bind(response_format=response_format)
+            data = invoke_chat_model(model, messages)
+        except BusinessError:
+            raise
+        except Exception as exc:
+            logger.warning("langchain chat failed: %s", exc)
+            raise BusinessError(
+                message=f"LLM 调用失败: {exc}", code="llm_error", status_code=502
+            ) from exc
+        return LLMResult(
+            text=data.get("text") or "",
+            prompt_tokens=int(data.get("prompt_tokens") or 0),
+            completion_tokens=int(data.get("completion_tokens") or 0),
+            total_tokens=int(data.get("total_tokens") or 0),
+            raw=data.get("raw") or {},
+            provider=self.provider_name,
+            model=str(data.get("model") or self.model_name),
         )
 
     def _endpoint_url(self) -> str:

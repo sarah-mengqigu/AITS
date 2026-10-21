@@ -14,7 +14,7 @@ LangGraph 多智能体编排、Django Channels 实时推送、Prometheus + Grafa
 | 前端 | Vue 3.3 · Vite 5 · Element Plus 2.4 · Pinia 2 · Vue Router 4 · ECharts 5 |
 | 后端 | Django 4.2 · DRF 3.14 · SimpleJWT · django-filter · drf-spectacular |
 | 异步 / 实时 | Celery 5.3 · django-celery-beat · Channels 4 · ASGI (Uvicorn/Daphne) |
-| AI | 双引擎编排（内置 StateGraph / LangGraph 1.0.5 可切换）· 自研 LLM 客户端 · RAG · MCP |
+| AI | 双引擎编排（内置 StateGraph / LangGraph 1.0.5）· LangChain 胶水层（ChatOpenAI / Prompt / Parser / Embeddings / VectorStore / Tools）· RAG · MCP |
 | 测试执行 | HttpRunner 兼容 YAML · Playwright · MidScene · Sonic · Locust |
 | 数据 / 可观测 | SQLite/PostgreSQL · Redis · Prometheus · Grafana |
 
@@ -38,7 +38,7 @@ scripts/     dev.sh（一键启动）· verify.sh（一键验证）· smoke_api.
 # 1) 后端依赖（已预置 backend/.venv）
 cd backend
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-# 可选：启用 LangGraph 编排引擎（不装则自动使用内置等价实现）
+# 可选：启用 LangGraph 编排 + LangChain 胶水层（不装则自动使用内置等价实现）
 .venv/bin/pip install -r requirements-ai.txt
 
 
@@ -83,6 +83,7 @@ export SONIC_BASE_URL=http://127.0.0.1:3000 SONIC_USERNAME=... SONIC_PASSWORD=..
 | `FRONTEND_BASE_URL` | `http://127.0.0.1:5173` | CORS / 通知报告链接 |
 | `AITS_EXECUTION_MODE` | `simulated` | `real` 时启动 Playwright/Locust/HttpRunner 子进程 |
 | `AITS_AGENT_ENGINE` | `auto` | `auto`（装了 LangGraph 就用）/ `builtin` / `langgraph` |
+| `AITS_LLM_BACKEND` | `auto` | `auto`（装了 langchain-openai 就走 LangChain）/ `langchain` / `http` |
 | `SONIC_BASE_URL` 等 | 空 | 移动端云真机集成 |
 | `PROMETHEUS_SD_AUTO_UPDATE` | `True` | 自动维护 File SD 目标 |
 | `GRAFANA_AI_NOTIFY_RECEIVER_ID` | 空 | AI 诊断默认通知接收人 |
@@ -130,7 +131,7 @@ cd backend
 ## 测试与验证
 
 ```bash
-./scripts/verify.sh            # 后端 428 项测试（双引擎）+ 前端单测/构建 + 在线冒烟
+./scripts/verify.sh            # 后端 444 项测试（LangChain + 纯回退两种路径）+ 前端单测/构建 + 在线冒烟
 cd backend && AITS_ENV=test .venv/bin/python manage.py test apps tests -v 1
 cd frontend && pnpm test -- --run && pnpm build
 ```

@@ -249,6 +249,15 @@ submit(run_suite, execution.id)   # 测试环境自动 eager 执行
   - 两种引擎共享同一套建图 API、**编译期校验**（`invalid_graph`）与**步数保护**（`agent_max_steps`，LangGraph 的 `GraphRecursionError` 会被翻译）；
   - 可选依赖清单：`backend/requirements-ai.txt`（`langgraph==1.0.5`），核心依赖 `requirements.txt` 不包含它，保证离线可运行；
   - 兼容性由 `apps/ai_core/tests/test_engines.py` 守护：7 个 Agent 在两种引擎下输出逐字节一致。
+- **LangChain 胶水层（可选增强，2026-10 引入）**：
+  - LLM 客户端：`AITS_LLM_BACKEND=auto|langchain|http`；可用时走 `langchain_openai.ChatOpenAI`，否则回退自研 requests 客户端；
+  - Prompt：`ChatPromptTemplate`（`render_messages()`），保留纯 dict 回退；
+  - 结构化输出：`JsonOutputParser` + `extract_first_object` 容错兜底；
+  - RAG：标准 `Embeddings` 接口（确定性哈希实现，离线可用）+ `InMemoryVectorStore` 检索，不可用时回退余弦扫描；
+  - MCP：`StructuredTool` 绑定工具 schema（执行需要真实 MCP 运行时，否则抛出清晰错误）；
+  - 观测：`BaseCallbackHandler` 采集 token 用量，沿用 `LLMUsageLog` 与 Prometheus；
+  - **重依赖懒加载**：`langchain-openai`（+54 MB）、`InMemoryVectorStore`（+38 MB）只在真正调用时导入，Mock/离线路径零成本；
+  - 依赖清单 `backend/requirements-ai.txt`；兼容性由 `apps/ai_core/tests/test_langchain_bridge.py`（16 项）守护。
 
 ### 2.8 scheduled_tasks
 模型：

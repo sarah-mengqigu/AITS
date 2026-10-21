@@ -22,7 +22,10 @@ from apps.ai_core.services.graph import END, get_stategraph
 from apps.ai_core.services.model_manager import get_model_manager
 from apps.ai_core.services.rag_service import RAGService
 from apps.common.api.api_exception_handler import BusinessError
-from apps.common.parsers.yaml_json import extract_first_object
+from apps.ai_core.services.langchain_bridge import (
+    parse_json_output,
+    render_messages,
+)
 from apps.common.websocket.core import WebSocketMessageService
 
 logger = logging.getLogger(__name__)
@@ -169,7 +172,7 @@ class BaseAgent:
         self._usage.append(entry)
         return {
             "llm_text": result.text,
-            "llm_data": extract_first_object(result.text),
+            "llm_data": parse_json_output(result.text),
             "usage": [entry],
         }
 
@@ -179,7 +182,7 @@ class BaseAgent:
         if result is None:
             result = state.get("llm_data") or {"text": state.get("llm_text") or ""}
         if isinstance(result, str):
-            parsed = extract_first_object(result)
+            parsed = parse_json_output(result)
             result = parsed if parsed is not None else {"text": result}
         return {"result": result}
 
@@ -195,10 +198,8 @@ class BaseAgent:
         )
 
     def build_messages(self, prompt: str) -> list[dict]:
-        return [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": prompt},
-        ]
+        # LangChain ChatPromptTemplate when available, plain dicts otherwise.
+        return render_messages(self.system_prompt, prompt)
 
     def retrieval_query(self, state) -> str:
         payload = state.get("payload") or {}

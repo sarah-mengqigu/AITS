@@ -410,6 +410,10 @@ class RAGService:
                 logger.warning("chroma search failed, falling back to json: %s", exc)
 
         store = self._load_store(collection)
+        langchain_hits = self._langchain_search(store, str(query), limit)
+        if langchain_hits is not None:
+            return langchain_hits
+
         query_vector = embed_text(str(query))
         query_tokens = set(tokenize(str(query)))
         scored: list[dict] = []
@@ -431,6 +435,59 @@ class RAGService:
                         "document_id": int(document.get("document_id") or doc_id or 0),
                     }
                 )
+        scored.sort(key=lambda item: (-item["score"], item["document_id"], item["text"]))
+        return scored[:limit]
+
+    def _langchain_search(self, store: dict, query: str, limit: int):
+        """Search through LangChain's ``InMemoryVectorStore`` when available.
+
+        Returns ``None`` when the optional vector store backend is unavailable,
+        so the caller falls back to the built-in cosine scan. The lexical gate
+        and score rounding are kept identical to the built-in path.
+        """
+        entries = []
+        for document in (store.get("documents") or {}).values():
+            for chunk in document.get("chunks") or []:
+                entries.append(
+                    {
+                        "text": chunk.get("text", ""),
+                        "document_id": int(document.get("document_id") or 0),
+                        "source": document.get("source", ""),
+                    }
+                )
+        if not entries:
+            return []
+        try:
+            from apps.ai_core.services.langchain_bridge import build_vector_store
+
+            vector_store = build_vector_store(entries)
+            if vector_store is None:
+                return None
+            hits = vector_store.similarity_search_with_score(
+                query, k=min(max(limit * 4, limit), 100)
+            )
+        except Exception as exc:  # pragma: no cover - optional backend
+            logger.warning("langchain vector search failed, using cosine: %s", exc)
+            return None
+
+        query_tokens = set(tokenize(query))
+        scored = []
+        for document, score in hits:
+            text = document.page_content or ""
+            if query_tokens and not (query_tokens & set(tokenize(text))):
+                continue
+            score = float(score)
+            if score <= 0:
+                continue
+            metadata = document.metadata or {}
+            scored.append(
+                {
+                    "text": text,
+                    "score": round(score, 6),
+                    "source": metadata.get("source", ""),
+                    "document_id": int(metadata.get("document_id") or 0),
+                }
+            )
         scored.sort(key=lambda item: (-item["score"], item["document_id"], item["text"]))
         return scored[:limit]
 

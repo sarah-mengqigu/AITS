@@ -269,6 +269,12 @@ class MCPConfiguration(TimeStampedModel):
             return tools
         return self._fallback_tools()
 
+    def langchain_tools(self) -> list:
+        """Expose the discovered tools as LangChain ``StructuredTool`` objects."""
+        from apps.ai_core.services.langchain_bridge import build_mcp_tools
+
+        return build_mcp_tools(self)
+
     def refresh_tools(self) -> dict:
         """Sync ``MCPTool`` rows from the server config.
 

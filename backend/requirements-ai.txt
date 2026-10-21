@@ -1,18 +1,36 @@
-# Optional AI orchestration engine (LangGraph).
+# Optional AI stack: LangGraph orchestration + LangChain glue layer.
 #
-# The platform runs fully without this file: apps/ai_core ships a built-in
-# StateGraph-compatible engine (backend/apps/ai_core/services/graph.py).
+# The platform runs fully without this file:
+#   * orchestration falls back to the built-in StateGraph implementation
+#   * agents fall back to the project's thin LLM client / prompt builder /
+#     JSON parser / cosine RAG / offline MCP tool index
 #
 # Install with:
 #     backend/.venv/bin/pip install -r backend/requirements-ai.txt
 #
-# Then select it with AITS_AGENT_ENGINE=langgraph (or leave "auto" to use it
-# whenever the package is importable).
+# Engine switches (see backend/.env.example):
+#     AITS_AGENT_ENGINE=auto|builtin|langgraph
+#     AITS_LLM_BACKEND=auto|langchain|http
 #
-# Footprint measured on macOS arm64 / Python 3.10.9:
-#   * download ~7.9 MB (39 wheels, all prebuilt - no compiler needed)
-#   * installed ~+42 MB
-#   * RSS: +50 MB standalone, +25 MB inside a Django process
-#   * import: ~0.3 s warm (first cold import ~5.9 s while writing bytecode)
-# Pinned to the version referenced by the v2 design document.
+# Measured footprint on macOS arm64 / Python 3.10.9:
+#   * download ~19 MB, installed ~+102 MB (venv 165 MB -> 262 MB)
+#   * backend RSS +26 MB at import (LangChain glue), +80 MB when the OpenAI
+#     SDK / vector store are actually used
+
+# --- orchestration -------------------------------------------------------
 langgraph==1.0.5
+
+# --- LangChain glue: chat model / prompt / parser / tools / callbacks ----
+langchain-openai==1.7.2
+# required by langchain_core.vectorstores.InMemoryVectorStore
+numpy==2.2.6
+
+# --- optional extras (not installed by default) --------------------------
+# Real MCP transport (currently tools are indexed offline):
+# langchain-mcp-adapters==0.3.2
+# mcp==1.12.4
+# Persistent vector store (RAGConfiguration.vector_store=chroma):
+# langchain-chroma==1.1.0
+# Real embeddings (downloads a model, e.g. BAAI/bge-large-zh-v1.5 ~1.3 GB):
+# langchain-huggingface==1.2.3
+# sentence-transformers==5.1.2
